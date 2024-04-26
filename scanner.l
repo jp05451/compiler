@@ -1,6 +1,6 @@
 %{
 #include<stdio.h>
-
+#include<string.h>
 
 #define LIST     strcat(buf,yytext)
 #define token(t) {LIST; printf("<%s>\n",#t);}
@@ -28,6 +28,9 @@ ID ({alphaBat}|"_")+({digits}|{alphaBat}|"_")*
 
 %x COMMENT
 %x STRING
+%x CHARACTER
+%x C_STYLE_COMMENT
+
 
 %%
 
@@ -63,17 +66,6 @@ false   {token(FALSE);}
 "-" {token(MINUS);}
 "*" {token(MULTIPLE);}
 "/" {token(DIVISION);}
-
-\'    {
-            LIST;
-            BEGIN(STRING);
-        }
-\"      {token(DOUBLE_QUOTE);}
-    /*==========Escape sequences==========*/
-
-"\t"    {token(TAB);}
-"\\"    {token(SLASH);}
-"\?"    {token(QUESTION_MARK);}
 
     /*==========KeyWord==========*/
 
@@ -130,15 +122,44 @@ ret     {token(RETURN);}
 \'      {
             LIST;
             BEGIN(STRING);
+            strTemp[0]='\0';
         }
+
 \"      {
             LIST;
+            strTemp[0]='\0';
             BEGIN(STRING);
         }
 
-<STRING>"\'"    {strcat(buf,'\'');}
-<STRING>"\""    {strcat(buf,'\"');}
-<STRING>\"      {}
+<STRING>\"      {
+                    strcat(buf,strTemp);
+                    BEGIN(INITIAL);
+                    tokenString(STRING,strTemp);
+                }
+
+
+<STRING>\'      {
+                    strcat(buf,strTemp);
+                    BEGIN(INITIAL);
+                    tokenString(STRING,strTemp);
+                }
+
+
+    /*==========Escape sequences==========*/
+
+<STRING>\\\\    {strcat(strTemp,"\\");}
+
+<STRING>\\t     {strcat(strTemp,"\t");}
+
+<STRING>\\n     {strcat(strTemp,"\n");}
+
+<STRING>\\\"     {strcat(strTemp,"\"");}
+
+<STRING>\\\'     {strcat(strTemp,"\'");}
+
+<STRING>\\?     {strcat(strTemp,"\?");}
+
+<STRING>.       {strcat(strTemp,yytext);}
 
     /*====comment=====*/
 
@@ -153,7 +174,22 @@ ret     {token(RETURN);}
 
 <COMMENT>.     {LIST;}
 
+    /* C_STYLE_COMMENT */
+"/*"    {   
+            LIST;
+            BEGIN(C_STYLE_COMMENT);
+        }
 
+<C_STYLE_COMMENT>"*/"   {
+                            LIST;
+                            BEGIN(INITIAL);
+                        }
+<C_STYLE_COMMENT>\n     {
+                            LIST;
+                            printf("%d: %s",linenum++,buf);
+                            buf[0]='\0';
+                        }               
+<C_STYLE_COMMENT>.      {LIST;}         
 
 .       {
         LIST;
