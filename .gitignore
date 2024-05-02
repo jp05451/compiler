@@ -3,3 +3,4 @@ scanner.old.l
 lex.yy.cpp
 lex.yy.o
 example.old
+.DS_Store
