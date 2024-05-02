@@ -71,6 +71,7 @@ false   {token(FALSE);}
 
 if          {token(IF);}
 else        {token(ELSE);}
+for         {token(FOR);}
 while       {token(WHILE);}
 do          {token(DO);}
 switch      {token(SWITCH);}
