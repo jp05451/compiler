@@ -1,9 +1,0 @@
-int main(){
-    int k=10;
-    int count=1;
-    while (count<=k)
-    {
-        print(count+1);
-        count=count+1;
-    }
-}
