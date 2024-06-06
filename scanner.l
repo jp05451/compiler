@@ -1,12 +1,19 @@
 %{
-#include<stdio.h>
+#include<iostream>
 #include<string.h>
+#include"y.tab.hpp"
 
 #define LIST     strcat(buf,yytext)
-#define token(t) {LIST; printf("<%s>\n",#t);}
-#define tokenInteger(t,i) {LIST; printf("<%s:%d>\n",#t,i);}
-#define tokenREAL(t,i) {LIST; printf("<%s:%f>\n",#t,i);}
-#define tokenString(t,s) {LIST; printf("<%s:%s>\n",#t,s);}
+
+// #define token(t) {LIST; printf("<%s>\n",#t);}
+// #define tokenINT_VALUE(t,i) {LIST; printf("<%s:%d>\n",#t,i);}
+// #define tokenREAL(t,i) {LIST; printf("<%s:%f>\n",#t,i);}
+// #define tokenString(t,s) {LIST; printf("<%s:%s>\n",#t,s);} 
+
+#define token(t) {LIST; printf("<%s>\n",#t);return t;}
+#define tokenINT_VALUE(t,i) {LIST; printf("<%s:%d>\n",#t,i);return t;}
+#define tokenREAL(t,i) {LIST; printf("<%s:%f>\n",#t,i);return t;}
+#define tokenString(t,s) {LIST; printf("<%s:%s>\n",#t,s);return t;} 
 #define yyDebug(s) printf("%s",s);
 
 #define MAX_LINE_LENG 256
@@ -19,9 +26,9 @@ char strTemp[MAX_LINE_LENG];
 
 digit [0-9]
 digits {digit}+
-INTEGER {digits}
+INT_VALUE {digits}
 
-REALNUMBER {digits}+"."{digits}+
+REAL_VALUE {digits}+"."{digits}+
 
 alphaBat [a-zA-Z]
 ID ({alphaBat}|"_")+({digits}|{alphaBat}|"_")*
@@ -55,17 +62,18 @@ false   {token(FALSE);}
 "=="    {token(EQUAL);}    
 "!="    {token(NOT_EQUAL);}
 
-">"     {token(LARGER);}
-"<"     {token(SMALLER);}
-">="    {token(LARGER_THAN_EQUAL);}
-"<="    {token(SMALLER_THAN_EQUAL);}
+">"     {token('>');}
+"<"     {token('<');}
+">="    {token(MORE_EQUAL);}
+"<="    {token(LESS_EQUAL);}
 
     /*==========operator==========*/
 
-"+" {token(PLUS);}
-"-" {token(MINUS);}
-"*" {token(MULTIPLE);}
-"/" {token(DIVISION);}
+"+" {token('+');}
+"-" {token('-');}
+"*" {token('*');}
+"/" {token('/');}
+"%" {token('%');}
 
     /*==========KeyWord==========*/
 
@@ -79,19 +87,32 @@ case        {token(CASE);}
 
 fun     {token(FUNCTION);}
 ret     {token(RETURN);}
+main    {token(MAIN);}
+print   {token(PRINT);}
+println   {token(PRINTLN);}
 
+    /* "("     {token(LEFT_ROUND_BRACKET);}
+    ")"     {token(RIGHT_ROUND_BRACKET);}
+    "["     {token(LEFT_SQUARE_BRACKET);}
+    "]"     {token(RIGHT_SQUARE_BRACKET);}
+    "{"     {token(LEFT_CURLY_BRACKET);}
+    "}"     {token(RIGHT_CURLY_BRACKET);}
+    ":"     {token(COLON);}
+    ";"     {token(SEMICOLON);}
+    ","     {token(COMMA);}
 
-"("     {token(LEFT_ROUND_BRACKET);}
-")"     {token(RIGHT_ROUND_BRACKET);}
-"["     {token(LEFT_SQUARE_BRACKET);}
-"]"     {token(RIGHT_SQUARE_BRACKET);}
-"{"     {token(LEFT_CURLY_BRACKET);}
-"}"     {token(RIGHT_CURLY_BRACKET);}
-":"     {token(COLON);}
-";"     {token(SEMICOLON);}
-","     {token(COMMA);}
+    "="     {token(ASSIGNMENT);} */
 
-"="     {token(ASSIGNMENT);}
+    "("     {token('(');}
+    ")"     {token(')');}
+    "["     {token('[');}
+    "]"     {token(']');}
+    "{"     {token('{');}
+    "}"     {token('}');}
+    ":"     {token(':');}
+    ";"     {token(';');}
+    ","     {token(',');}
+    "="     {token('=');}
 
 
 
@@ -101,31 +122,39 @@ ret     {token(RETURN);}
             buf[0] = '\0';
         }
 
-{INTEGER}   {
+{INT_VALUE}   {
                 int number;
                 sscanf(yytext,"%d",&number);
-                tokenInteger(INTEGER,number);
+                tokenINT_VALUE(INT_VALUE,number);
+                // yylval.int_value=number;
             }
 
-{REALNUMBER}      {
+{REAL_VALUE}      {
                 double number;
                 sscanf(yytext,"%lf",&number);
-                tokenREAL(DOUBLE,number);
+                // yylval.real_value=number;
+                tokenREAL(REAL_VALUE,number);
+
             }
 
 {ID}        {
-                token(ID);
                 printf("id:%s\n",yytext);
+                token(ID);
             }
 
 [ \t]*  {LIST;}
 
 \'      {
             LIST;
-            BEGIN(STRING);
             strTemp[0]='\0';
+            BEGIN(STRING);
         }
 
+
+
+
+
+        /*==========string state==========*/
 \"      {
             LIST;
             strTemp[0]='\0';
@@ -135,17 +164,16 @@ ret     {token(RETURN);}
 <STRING>\"      {
                     strcat(buf,strTemp);
                     BEGIN(INITIAL);
-                    tokenString(STRING,strTemp);
+                    // strcpy(yylval.stringValue,strTemp);
+                    tokenString(STR,strTemp);
                 }
-
 
 <STRING>\'      {
                     strcat(buf,strTemp);
                     BEGIN(INITIAL);
-                    tokenString(STRING,strTemp);
+                    // strcat(yylval.stringValue,strTemp);
+                    tokenString(STR,strTemp);
                 }
-
-
     /*==========Escape sequences==========*/
 
 <STRING>\\\\    {strcat(strTemp,"\\");}
@@ -154,15 +182,24 @@ ret     {token(RETURN);}
 
 <STRING>\\n     {strcat(strTemp,"\n");}
 
-<STRING>\\\"     {strcat(strTemp,"\"");}
+<STRING>\\\"    {strcat(strTemp,"\"");}
 
-<STRING>\\\'     {strcat(strTemp,"\'");}
+<STRING>\\\'    {strcat(strTemp,"\'");}
 
-<STRING>\\?     {strcat(strTemp,"\?");}
+<STRING>\\?     {strcat(strTemp,"\?");} 
+<STRING>\n      {
+                    printf("Bad Charactor\n");      
+                    linenum++;        
+                    exit(0);
+                } 
 
 <STRING>.       {strcat(strTemp,yytext);}
 
-    /*====comment=====*/
+
+
+
+
+    /*==========comment==========*/
 
 "//"    {LIST;BEGIN(COMMENT);}
 
@@ -175,7 +212,8 @@ ret     {token(RETURN);}
 
 <COMMENT>.     {LIST;}
 
-    /* C_STYLE_COMMENT */
+    /*==========C_STYLE_COMMENT==========*/
+
 "/*"    {   
             LIST;
             BEGIN(C_STYLE_COMMENT);
@@ -196,12 +234,12 @@ ret     {token(RETURN);}
         LIST;
         printf("%d:%s\n", linenum+1, buf);
         printf("bad character:'%s'\n",yytext);
-        exit(-1);
+        exit(0);
         }
 
 %%
 
-
+/* 
 int main(int argc, char *argv[]) 
 {
 
@@ -224,4 +262,4 @@ int main(int argc, char *argv[])
 
     fclose(file); 
     return 0;
-}
+} */
