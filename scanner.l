@@ -2,6 +2,8 @@
 #include<iostream>
 #include<string.h>
 #include"y.tab.hpp"
+#pragma once
+
 
 #define LIST     strcat(buf,yytext)
 
@@ -87,7 +89,7 @@ case        {token(CASE);}
 
 fun     {token(FUNCTION);}
 ret     {token(RETURN);}
-main    {token(MAIN);}
+    /* main    {token(MAIN);} */
 print   {token(PRINT);}
 println   {token(PRINTLN);}
 
