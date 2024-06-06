@@ -4,3 +4,7 @@ lex.yy.cpp
 lex.yy.o
 example.old
 .DS_Store
+*.old*
+*.output
+*.tab.*
+*.yy.*
