@@ -65,10 +65,19 @@ declaration:    variable
                 ;
 
 variable:       VAR ID ':' type ';'
-                |VAR ID ':' type '=' //expressions
-                |VAR ID ':' type'[' INT_VALUE ']'
-                |VAR ID ':' type'[' INT_VALUE ']' '=' //arrayValue
+                |VAR ID ':' type '=' expressions ';'
+                |VAR ID ':' type'[' INT_VALUE ']' ';'
+                |VAR ID ':' type'[' INT_VALUE ']' '=' array ';'
                 ;
+
+array:      '{' arrayValue '}'
+            ;
+
+arrayValue: expressions
+            |expressions ',' expressions
+            |'{' arrayValue '}'
+            |'{' arrayValue '}' ',' '{' arrayValue '}'
+            ;
 
 functionDeclare:    FUNCTION ID '(' parameter ')' ':'
                     '{'
@@ -86,6 +95,7 @@ type:       INT
             |BOOL
             ;
 
+expressions: ;
 %%
 
 void yyerror(char *msg)
