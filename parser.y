@@ -29,9 +29,9 @@ void yyerror(char *msg);
 
 %token <dataIdentity> ID 
 
-/* %type <real_value> expressions */
-/* %type <> bool_expression
-%type <dType> const_exp
+%type <real_value> expressions
+%type <real_value> bool_expression
+/* %type <dType> const_exp
 %type <dType> Types Type array function_invocation functionVarA functionVarB */
 
 /* tokens */
@@ -61,6 +61,7 @@ declarations:   declaration declarations
                 ;
 
 declaration:    variable
+                |constant
                 |functionDeclare
                 ;
 
@@ -70,23 +71,57 @@ variable:       VAR ID ':' type ';'
                 |VAR ID ':' type'[' INT_VALUE ']' '=' array ';'
                 ;
 
+constant:       VAR ID ':' type '=' expressions ';'
+                |VAR ID ':' type'[' INT_VALUE ']' '=' array ';'
+                ;
+
 array:      '{' arrayValue '}'
             ;
 
 arrayValue: expressions
-            |expressions ',' expressions
+            |arrayValue ',' arrayValue
             |'{' arrayValue '}'
             |'{' arrayValue '}' ',' '{' arrayValue '}'
             ;
 
-functionDeclare:    FUNCTION ID '(' parameter ')' ':'
+functionDeclare:    FUNCTION ID '(' parameter ')' ':' type
                     '{'
+                    statments
+                    RETURN expressions ';'
+                    '}'
+                    |FUNCTION MAIN '(' parameter ')'
+                    '{'
+                    statments
                     '}'
 
 parameter:  ID ':' type
             |parameter ',' parameter
             |
             ;
+
+statments:  statment statments
+            |
+            ;
+
+statment:   simple
+            |declaration
+            |block
+            |conditional
+            ;
+
+simple:     print
+            |ID '=' expressions ';'
+            ;
+
+print:      PRINT '(' expressions ')' ';'
+            |PRINTLN '(' expressions ')' ';'
+            |PRINT '(' STR ')' ';'
+            |PRINTLN '(' STR ')' ';'
+            ;
+
+block:      '{'
+            statments    
+            '}'
 
 
 type:       INT
@@ -95,7 +130,43 @@ type:       INT
             |BOOL
             ;
 
-expressions: ;
+conditional:    IF '(' bool_expression ')'
+                '{'
+                    statments
+                '}'
+
+expressions:    '(' expressions ')'
+                |expressions '+' expressions
+                |expressions '-' expressions
+                |expressions '*' expressions
+                |expressions '/' expressions
+                |expressions '%' expressions
+                |'-' expressions %prec NEGATIVE
+                |const_exp
+                |bool_expression
+                |ID
+                |ID '[' INT_VALUE ']'
+                |functionCall
+                ;
+
+functionCall:   ID '(' inputParameter ')';
+
+inputParameter: expressions
+                |inputParameter ',' inputParameter
+                ;
+
+const_exp:      INT_VALUE
+                |REAL_VALUE
+                |TRUE
+                |FALSE
+                ;
+
+bool_expression:    expressions '>' expressions
+                    |expressions '<' expressions
+                    |expressions MORE_EQUAL expressions
+                    |expressions LESS_EQUAL expressions
+                    |expressions EQUAL expressions
+                    ;
 %%
 
 void yyerror(char *msg)
