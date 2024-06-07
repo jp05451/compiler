@@ -67,15 +67,19 @@ declaration:    variable
 
 variable:       VAR ID ':' type ';'
                 |VAR ID ':' type '=' expressions ';'
-                |VAR ID ':' type'[' INT_VALUE ']' ';'
-                |VAR ID ':' type'[' INT_VALUE ']' '=' array ';'
+                |array
                 ;
 
-constant:       VAR ID ':' type '=' expressions ';'
-                |VAR ID ':' type'[' INT_VALUE ']' '=' array ';'
+constant:       VAL ID ':' type '=' expressions ';'
+                |VAL ID ':' type dymention '=' array ';'
                 ;
 
-array:      '{' arrayValue '}'
+array:      VAR ID ':' type dymention '=' '{' arrayValue '}' ';'
+            |VAR ID ':' type dymention ';'
+            ;
+
+dymention:  '[' INT_VALUE ']'
+            |dymention dymention
             ;
 
 arrayValue: expressions
