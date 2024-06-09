@@ -5,7 +5,7 @@
 ##################################################################
 
 parser: y.tab.cpp lex.yy.cpp
-	g++ -ll -std=c++17 -o parser y.tab.cpp 
+	g++  -o parser y.tab.cpp -ll 
 
 y.tab.cpp: parser.y
 	bison -o y.tab.cpp parser.y -d -v
