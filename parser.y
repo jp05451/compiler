@@ -170,6 +170,8 @@ bool_expression:    expressions '>' expressions
                     |expressions MORE_EQUAL expressions
                     |expressions LESS_EQUAL expressions
                     |expressions EQUAL expressions
+                    |expressions OR expressions
+                    |expressions AND expressions
                     ;
 %%
 
