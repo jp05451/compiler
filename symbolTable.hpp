@@ -46,7 +46,7 @@ inline ostream &operator<<(ostream &ostr, const symbolTable &s)
     ostr << "ID" << "\t" << "info" << endl;
     for (auto &t : s.symbolMap)
     {
-        ostr << t.first << t.second << endl;
+        ostr<< t.second << endl;
     }
 }
 
