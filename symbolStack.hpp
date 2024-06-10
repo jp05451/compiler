@@ -1,5 +1,4 @@
 #include "symbolTable.hpp"
-#include "symbol.hpp"
 #include <string>
 #include <vector>
 #pragma once
@@ -7,49 +6,78 @@
 class symbolStack
 {
 public:
-    symbolStack() { newTable(); }
-    bool insert(const symbol &);
-    symbol &search(string);
-    void newTable();
-    void removeTable();
-
-    vector<symbolTable> symbol_table;
-    size_t top = -1;
-};
-void symbolStack::newTable()
-{
-    symbolTable temp;
-    symbol_table.push_back(temp);
-    top++;
-}
-inline void symbolStack::removeTable()
-{
-    symbol_table.pop_back();
-    top--;
-}
-
-bool symbolStack::insert(const symbol &s)
-{
-    symbol_table[top].insert(s);
-}
-
-inline symbol &symbolStack::search(string id)
-{
-    for (int i = top; i >= 0; i--)
+public:
+    vector<SymbolTable> tables;
+    symbolStack()
     {
-        if (symbol_table[i].isInTable(id))
+        push();
+    };
+    ~symbolStack(){};
+    void insert(string id)
+    {
+        if (lookup(id) == NULL)
+            tables.back().insert(id);
+    }
+    void insert(string id, symbol symbol)
+    {
+        symbol.id = id;
+        if (lookup(id) == NULL)
+            tables.back().table.push_back(symbol);
+
+        // if (!isGlobal(id))
+        //     tables.back().table.back().index = tables.back().index++;
+    }
+    
+    symbol *lookup(string id)
+    {
+        return tables.back().lookup(id);
+    }
+
+    symbol *global_lookup(string id)
+    {
+        for (vector<SymbolTable>::reverse_iterator it = tables.rbegin(); it != tables.rend(); ++it)
         {
-            return symbol_table[i].symbolMap[id];
+            symbol *symbol = it->lookup(id);
+            if (symbol != NULL)
+                return symbol;
         }
+        return NULL;
     }
-}
-
-ostream &operator << (ostream &ostr,symbolStack s)
-{
-    for (int i = s.top; i >= 0;i--)
+    void push()
     {
-        ostr << i << endl;
-        ostr << s.symbol_table[i] << endl;
+        tables.push_back(SymbolTable());
     }
-    return ostr;
-}
+    void pop()
+    {
+        tables.pop_back();
+    }
+    void dump()
+    {
+        for (vector<SymbolTable>::iterator it = tables.begin(); it != tables.end(); ++it)
+            it->dump();
+            // cout << it << endl;
+    }
+    bool isGlobal()
+    {
+        cout << tables.size() << endl;
+        return tables.size() == 1;
+    }
+    bool isGlobal(string id)
+    {
+        return tables[0].lookup(id) != NULL && (lookup(id) == NULL || tables.size() == 1);
+    }
+    int get_index(string id)
+    {
+        return global_lookup(id)->index;
+    }
+};
+
+// ostream &operator<<(ostream &ostr, symbolStack s)
+// {
+//     for (int i = s.top; i >= 0; i--)
+//     {
+//         ostr << i << endl;
+//         ostr << s.symbol_table[i] << endl;
+//     }
+//     return ostr;
+// }

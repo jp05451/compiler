@@ -1,49 +1,81 @@
+#ifndef SYMBOL_HPP
+#define SYMBOL_HPP
 #include <iostream>
+#include <vector>
 #include <string>
-#pragma once
 
 using namespace std;
 
+struct data
+{
+    /* data */
+    int int_data = 0;
+    float real_data = 0.0;
+    bool bool_data = false;
+    string string_data = "";
+    vector<data> array_data;
+};
+
 enum dataType
 {
-    type_int,
-    type_real,
-    type_char,
-    type_string
+    INT_TYPE,
+    REAL_TYPE,
+    BOOL_TYPE,
+    STRING_TYPE,
+    CHAR_TYPE,
+    NONE_TYPE
 };
 
-class dataInfo
+enum dataFlag
 {
-public:
-    string dType;
-    struct value
-    {
-        char charValue;
-        int intValue;
-        double doubleValue;
-    } value;
+    VARIABLE,
+    CONSTANT,
+    FUNC,
+    ARRAY_FLAG,
+    NONE_FLAG
 };
 
-ostream &operator<<(ostream &ostr, dataInfo info)
+dataType stringToType(string t)
 {
-    ostr << "type " << info.dType << " value: " << info.value.intValue << " " << info.value.doubleValue << info.value.charValue;
-    return ostr;
+    if (t == "INT")
+        return INT_TYPE;
+    if (t == "REAL")
+        return REAL_TYPE;
+    if (t == "BOOL")
+        return BOOL_TYPE;
+    if (t == "CHAR")
+        return CHAR_TYPE;
+    return NONE_TYPE;
 }
 
 class symbol
 {
 public:
-    string identity;
-    dataInfo info;
-    // symbol &operator=(const symbol &s)
-    // {
-    //     identity = s.identity;
-    //     info = s.info;
-    // }
+    string id;
+    int param_num = 0;
+    struct data S_data;
+    dataType S_type;
+    dataFlag S_flag;
+    bool init = false;
+    int index = -1;
+
+    symbol(string id_)
+    {
+        id = id_;
+    }
+    symbol(){};
+
+    ~symbol(){};
+
+    bool operator==(string id_)
+    {
+        return this->id == id_;
+    }
+
+    bool isConst()
+    {
+        return S_flag == dataFlag::CONSTANT;
+    }
 };
 
-ostream &operator<<(ostream &ostr, const symbol &s)
-{
-    ostr << s.identity << "\t" << s.info;
-    return ostr;
-}
+#endif

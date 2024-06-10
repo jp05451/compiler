@@ -3,51 +3,40 @@
 #include <vector>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <algorithm>
 #include <iostream>
-#include <iomanip>
-#include <stack>
-#include <vector>
 #include "symbol.hpp"
 
 using namespace std;
 
 #define MAX_LINE_LENG 256
-class symbolTable
+class SymbolTable
 {
 public:
-    ostream &operator<<(ostream &);
-    string identity;
-
-    bool insert(const symbol &);
-    bool isInTable(string);
-    void dump();
-
-    unordered_map<string, symbol> symbolMap;
-};
-
-bool symbolTable::isInTable(string identity)
-{
-    unordered_map<string, symbol>::iterator it;
-    it = symbolMap.find(identity);
-    if (it != symbolMap.end())
-        return true;
-    return false;
-}
-
-bool symbolTable::insert(const symbol &s)
-{
-    symbolMap[s.identity] = s;
-}
-
-inline ostream &operator<<(ostream &ostr, const symbolTable &s)
-{
-    ostr << "ID" << "\t" << "info" << endl;
-    for (auto &t : s.symbolMap)
+    vector<symbol> table;
+    int index = -1;
+    symbol *lookup(string id)
     {
-        ostr<< t.second << endl;
+        vector<symbol>::iterator it = find(table.begin(), table.end(), id);
+        if (it != table.end())
+            return &(*it);
+        else
+            return NULL;
     }
-}
+    void insert(symbol &s)
+    {
+        table.push_back(s);
+    }
+    void insert(string id)
+    {
+        if (lookup(id) == NULL)
+            table.push_back(symbol(id));
+    }
+    void dump()
+    {
+        for (vector<symbol>::iterator it = table.begin(); it != table.end(); ++it)
+            cout << it->id << "\t" << it->index << endl;
+    }
+};
 
 #endif
