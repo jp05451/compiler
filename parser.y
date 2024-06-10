@@ -16,20 +16,17 @@ void yyerror(char *msg);
 
 %union { 
     struct ast *a;
-    int int_value;
     double real_value;
-    bool bool_value;
     char* stringValue;
     char dataIdentity[256];
 }
 
-%token <int_value> INT_VALUE
-%token <real_value> REAL_VALUE
+%token <real_value> INT_VALUE REAL_VALUE TRUE FALSE
 
 %token <dataIdentity> ID 
 
-%type <real_value> expressions
-%type <real_value> bool_expression
+%type <a> expressions factor term
+/* %type <real_value> bool_expression */
 %type <real_value> const_exp
 /* %type <dType> Types Type array function_invocation functionVarA functionVarB */
 
@@ -141,13 +138,13 @@ conditional:    IF '(' bool_expression ')'
 expressions:    factor
                 |expressions '+' factor
                 |expressions '-' factor
-                |expressions '%' factor
                 /* |bool_expression */
                 ;
 
 factor:         term
                 |factor '*' term
                 |factor '/' term
+                /* |factor '*' factor */
                 ;
 
 term:           '(' expressions ')'
@@ -155,6 +152,8 @@ term:           '(' expressions ')'
                 |ID '[' INT_VALUE ']'
                 |functionCall
                 |'-' expressions %prec NEGATIVE
+                {
+                }
                 |const_exp
 
                 ;
@@ -167,6 +166,10 @@ inputParameter: expressions
                 ;
 
 const_exp:      INT_VALUE
+                {
+                    ast *a = new ast;
+                    // $$ = a->newNum(($1));
+                }
                 |REAL_VALUE
                 |TRUE
                 |FALSE
