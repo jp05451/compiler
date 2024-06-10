@@ -1,5 +1,5 @@
-#include<iostream>
-#include<string>
+#include <iostream>
+#include <string>
 #pragma once
 
 using namespace std;
@@ -18,7 +18,7 @@ public:
     dataType dType;
     union value
     {
-        char charValue;
+        char charValue; 
         int intValue;
         double doubleValue;
     };
@@ -29,7 +29,7 @@ class symbol
 public:
     string identity;
     dataInfo info;
-    symbol &operator = (const symbol &s)
+    symbol &operator=(const symbol &s)
     {
         identity = s.identity;
         info = s.info;
