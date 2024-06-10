@@ -12,6 +12,7 @@ public:
     symbol &search(string);
     void newTable();
     void removeTable();
+
     vector<symbolTable> symbol_table;
     size_t top = -1;
 };
@@ -41,4 +42,14 @@ inline symbol &symbolStack::search(string id)
             return symbol_table[i].symbolMap[id];
         }
     }
+}
+
+ostream &operator << (ostream &ostr,symbolStack s)
+{
+    for (int i = s.top; i >= 0;i--)
+    {
+        ostr << i << endl;
+        ostr << s.symbol_table[i] << endl;
+    }
+    return ostr;
 }

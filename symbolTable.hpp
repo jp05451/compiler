@@ -17,10 +17,13 @@ using namespace std;
 class symbolTable
 {
 public:
+    ostream &operator<<(ostream &);
     string identity;
 
     bool insert(const symbol &);
     bool isInTable(string);
+    void dump();
+
     unordered_map<string, symbol> symbolMap;
 };
 
@@ -36,6 +39,15 @@ bool symbolTable::isInTable(string identity)
 bool symbolTable::insert(const symbol &s)
 {
     symbolMap[s.identity] = s;
+}
+
+inline ostream &operator<<(ostream &ostr, const symbolTable &s)
+{
+    ostr << "ID" << "\t" << "info" << endl;
+    for (auto &t : s.symbolMap)
+    {
+        ostr << t.first << t.second << endl;
+    }
 }
 
 #endif
