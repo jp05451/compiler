@@ -2,6 +2,8 @@
 #include<string.h>
 #include "lex.yy.cpp"
 #include "symbolTable.hpp"
+#include "symbolStack.hpp"
+#include "ast.hpp"
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -10,16 +12,13 @@
 // int yylex();
 // void yyerror(std::string msg);
 void yyerror(char *msg);
-
 %}
 
-
-
 %union { 
+    struct ast *a;
     int int_value;
     double real_value;
     bool bool_value;
-    char charValue;
     char* stringValue;
     char dataIdentity[256];
 }
@@ -31,8 +30,8 @@ void yyerror(char *msg);
 
 %type <real_value> expressions
 %type <real_value> bool_expression
-/* %type <dType> const_exp
-%type <dType> Types Type array function_invocation functionVarA functionVarB */
+%type <real_value> const_exp
+/* %type <dType> Types Type array function_invocation functionVarA functionVarB */
 
 /* tokens */
 %token VAR VAL // define
@@ -124,7 +123,7 @@ print:      PRINT '(' expressions ')' ';'
             ;
 
 block:      '{'
-            statments    
+                statments    
             '}'
 
 
@@ -139,19 +138,27 @@ conditional:    IF '(' bool_expression ')'
                     statments
                 '}'
 
-expressions:    '(' expressions ')'
-                |expressions '+' expressions
-                |expressions '-' expressions
-                |expressions '*' expressions
-                |expressions '/' expressions
-                |expressions '%' expressions
-                |'-' expressions %prec NEGATIVE
-                |const_exp
-                |bool_expression
+expressions:    factor
+                |expressions '+' factor
+                |expressions '-' factor
+                |expressions '%' factor
+                /* |bool_expression */
+                ;
+
+factor:         term
+                |factor '*' term
+                |factor '/' term
+                ;
+
+term:           '(' expressions ')'
                 |ID
                 |ID '[' INT_VALUE ']'
                 |functionCall
+                |'-' expressions %prec NEGATIVE
+                |const_exp
+
                 ;
+
 
 functionCall:   ID '(' inputParameter ')';
 
@@ -180,10 +187,6 @@ void yyerror(char *msg)
     fprintf(stderr, "%s\n", msg);
 }
 
-/* void yyerror(std::string &msg)
-{
-    fprintf(stderr, "%s\n", msg.c_str());
-} */
 
 int main(int argc,char **argv)
 {
