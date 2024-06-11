@@ -1,4 +1,6 @@
 fun main () {
 	print(123.456);
+	print("\n");
+	println("\n");
 	println(123.456);
 }
