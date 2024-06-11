@@ -3,7 +3,6 @@
 
 #include "symbol.hpp"
 
-
 using namespace std;
 
 #define MAX_LINE_LENG 256

@@ -7,7 +7,6 @@
 #include <iostream>
 // #pragma once
 
-
 using namespace std;
 
 struct data
@@ -92,6 +91,32 @@ public:
         return S_flag == flag::CONSTANT;
     }
 };
+
+// ostream &operator<<(ostream &ostr, symbol &s)
+// {
+//     if (s.S_flag != ARRAY_FLAG)
+//     {
+//         if (s.S_type == dataType::INT_TYPE)
+//             cout << s.S_data.int_data;
+//         else if (s.S_type == dataType::REAL_TYPE)
+//             cout << s.S_data.real_data;
+//     }
+//     else if (s.S_flag == ARRAY_FLAG)
+//     {
+//         for (int i = 0; i < s.S_data.array_data.size(); i++)
+//         {
+//             if (s.S_type == dataType::INT_TYPE)
+//                 cout << s.S_data.array_data[i].int_data;
+//             else if (s.S_type == dataType::REAL_TYPE)
+//                 cout << s.S_data.real_data;
+//         }
+//     }
+// }
+
+bool isArray(symbol *s)
+{
+    return s->S_flag == ARRAY_FLAG;
+}
 
 symbol *intConst(int value_)
 {

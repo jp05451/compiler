@@ -20,11 +20,11 @@ public:
         symbol.id = id;
         if (lookup(id) == NULL)
             tables.back().table.push_back(symbol);
-        
+
         if (!isGlobal(id))
             tables.back().table.back().index = tables.back().index++;
     }
-    
+
     symbol *lookup(string id)
     {
         return tables.back().lookup(id);
@@ -52,7 +52,7 @@ public:
     {
         for (vector<SymbolTable>::iterator it = tables.begin(); it != tables.end(); ++it)
             it->dump();
-            // cout << it << endl;
+        // cout << it << endl;
     }
     bool isGlobal()
     {

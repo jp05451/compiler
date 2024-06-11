@@ -101,6 +101,7 @@ constant:       VAL ID ':' Type '=' expressions ';'
                     symStack.insert($2,s);
                     delete $6;
                 }
+                // const array declare
                 |VAL ID ':' Type dymention '=' '{' arrayValue '}' ';'
                 {
                     if(symStack.lookup($2)!=NULL)
@@ -143,23 +144,47 @@ array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
                 s.S_type=stringToType($4);
                 s.S_flag=ARRAY_FLAG;
                 s.S_data.dymention=$5->S_data.dymention;
-                s.S_data.array_data=$8->S_data.array_data;
+
+
+                // offset the array
+                if(s.S_data.dymention.size()==2)
+                {
+                    s.S_data.array_data.resize(s.S_data.dymention[0]);
+                    for(int i=0;i<s.S_data.dymention[0];i++)
+                    {
+                        s.S_data.array_data[i].array_data.resize(s.S_data.dymention[1]);
+                        for(int j=0;j<s.S_data.dymention[1];j++)
+                        {
+                            s.S_data.array_data[i].array_data[j]=$8->S_data.array_data[i*s.S_data.dymention[1]+j];
+                            // cout<<s.S_data.array_data[i].array_data[j].int_data<<" ";
+                        }
+                        // cout<<endl;
+                    }
+                }
+                else
+                    s.S_data.array_data=$8->S_data.array_data;
                 
-                 //calculate total dymentions;
+                //calculate total dymentions;
                 int totalDymention=0;
                 for (auto& n : s.S_data.dymention)
                     totalDymention += n;
                 
+                // check size leagle
                 if(totalDymention < s.S_data.array_data.size())
                 {
                     yyerror("ERROR: too many dimensions");
                     YYABORT;
                 }
-                else
+                else 
                 {
+                    // fill the array 0
                     s.S_data.array_data.resize(s.S_data.dymention[0]);
                 }
+
+                
+
                 symStack.insert($2,s);
+                
                 delete $5;
                 delete $8;
             }
@@ -199,11 +224,13 @@ arrayValue: expressions
                 symbol *s = new symbol;
                 s->S_flag = ARRAY_FLAG;
                 s->S_data.array_data.push_back($1->S_data);
-                delete $1;
+                // delete $1;
                 $$ = s;
+
             }
             |arrayValue ',' expressions
             {
+
                 $1->S_data.array_data.push_back($3->S_data);
                 $$ = $1;
             }
@@ -254,12 +281,43 @@ simple:     print
 
 print:      PRINT '(' expressions ')' ';' 
             {
-                if( $3 -> S_type == dataType::INT_TYPE)
-                    cout<<$3->S_data.int_data;
-                if( $3 -> S_type == dataType::REAL_TYPE)
-                    cout<<$3->S_data.real_data;
+                if($3->S_flag != flag::ARRAY_FLAG)
+                {
+                    if($3->S_type == INT_TYPE)
+                        cout<<$3->S_data.int_data;
+                    if($3->S_type == REAL_TYPE)
+                        cout<<$3->S_data.real_data;
+                }
+                else if($3->S_flag == flag::ARRAY_FLAG)
+                {
+                    if($3->S_type == INT_TYPE)
+                        for(auto a:$3->S_data.array_data)
+                            cout<<a.int_data<<",";
+                    if($3->S_type == REAL_TYPE)
+                        for(auto a:$3->S_data.array_data)
+                            cout<<a.real_data<<",";
+                }
             }
             |PRINTLN '(' expressions ')' ';'
+            {
+                if($3->S_flag != flag::ARRAY_FLAG)
+                {
+                    if($3->S_type == INT_TYPE)
+                        cout<<$3->S_data.int_data;
+                    if($3->S_type == REAL_TYPE)
+                        cout<<$3->S_data.real_data;
+                }
+                else if($3->S_flag == flag::ARRAY_FLAG)
+                {
+                    if($3->S_type == INT_TYPE)
+                        for(auto a:$3->S_data.array_data)
+                            cout<<a.int_data;
+                    if($3->S_type == REAL_TYPE)
+                        for(auto a:$3->S_data.array_data)
+                            cout<<a.real_data;
+                }
+                cout<<endl;
+            }
             |PRINT '(' STR ')' ';'
             |PRINTLN '(' STR ')' ';'
             ;
@@ -295,20 +353,80 @@ conditional:    IF '(' bool_expression ')'
                     statments
                 '}'
 
-expressions:    factor
+expressions:    factor {$$ = $1;}
                 |expressions '+' factor 
                 {
                     /* type check */
                     if($1->S_type != $3->S_type)
                             cout << "WARNING:type mismatch" << endl;
 
-                    
-                    if($1->S_type == dataType::INT_TYPE)
-                            $$ = intConst($1->S_data.int_data + $3->S_data.int_data);
-                    else if($1->S_type == dataType::REAL_TYPE)
-                            $$ = realConst($1->S_data.real_data + $3->S_data.real_data);
+                    //  not array
+                    else if(!isArray($1) && !isArray($1))
+                    {
+                        if($1->S_type == dataType::INT_TYPE)
+                                $$ = intConst($1->S_data.int_data + $3->S_data.int_data);
+                        else if($1->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.real_data + $3->S_data.real_data);
+                        else
+                                yyerror("operator error");
+                    }
+                    //  is array
+                    else if(isArray($1) && isArray($1))
+                    {
+                        // dymention check
+                        if($1->S_data.array_data.size() != $3->S_data.array_data.size())
+                        {
+                            yyerror("dymention mismatch");
+                            YYABORT;
+                        }
+                        else
+                        {
+                            if($1->S_type == dataType::INT_TYPE)
+                            {
+                                symbol *result=new symbol;
+                                result->S_type=INT_TYPE;
+                                result->S_flag=ARRAY_FLAG;
+
+                                result->S_data.array_data.resize($1->S_data.dymention[0]);
+                                for(int i=0;i<$1->S_data.dymention[0];i++)
+                                {
+                                    result->S_data.array_data[i].array_data.resize($1->S_data.dymention[1]);
+                                    for(int j=0;j<$1->S_data.dymention[1];j++)
+                                    {
+                                        result->S_data.array_data[i].array_data[j].int_data= $1 -> S_data.array_data[i].array_data[j].int_data + $3->S_data.array_data[i].array_data[j].int_data;
+                                    }
+                                }
+                                $$ = result;
+                            }
+                            else if($1->S_type == dataType::REAL_TYPE)
+                            {
+                                cout<<"--------------------------------------------"<<endl;
+                                symbol *result=new symbol;
+                                result->S_type=INT_TYPE;
+                                result->S_flag=ARRAY_FLAG;
+
+                                result->S_data.array_data.resize($1->S_data.dymention[0]);
+                                for(int i=0;i<$1->S_data.dymention[0];i++)
+                                {
+                                    result->S_data.array_data[i].array_data.resize($1->S_data.dymention[1]);
+                                    for(int j=0;j<$1->S_data.dymention[1];j++)
+                                    {
+                                        result->S_data.array_data[i].array_data[j].real_data= $1 -> S_data.array_data[i].array_data[j].real_data + $3->S_data.array_data[i].array_data[j].real_data;
+
+                                    }
+                                }
+                                $$ = result;
+
+
+                            }
+                        }
+                    }
                     else
-                            yyerror("operator error");
+                    {
+                        yyerror("operator error");
+                        YYABORT;
+                    }
+                    cout <<"Reduce exp + exp"<<endl;
                 }
                 |expressions '-' factor
                 {
@@ -316,18 +434,72 @@ expressions:    factor
                     if($1->S_type != $3->S_type)
                             cout << "WARNING:type mismatch" << endl;
 
-                    
-                    if($1->S_type == dataType::INT_TYPE)
-                            $$ = intConst($1->S_data.int_data - $3->S_data.int_data);
-                    else if($1->S_type == dataType::REAL_TYPE)
-                            $$ = realConst($1->S_data.real_data - $3->S_data.real_data);
+                    if($1->S_flag != flag::ARRAY_FLAG && $3->S_flag != flag::ARRAY_FLAG)
+                    {
+                        if($1->S_type == dataType::INT_TYPE)
+                                $$ = intConst($1->S_data.int_data - $3->S_data.int_data);
+                        else if($1->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.real_data - $3->S_data.real_data);
+                        else
+                                yyerror("operator error");
+                    }
+                    else if($1->S_flag == flag::ARRAY_FLAG && $3->S_flag == flag::ARRAY_FLAG)
+                    {
+                        // dymention check
+                        if($1->S_data.array_data.size() != $3->S_data.array_data.size())
+                        {
+                            yyerror("dymention mismatch");
+                            YYABORT;
+                        }
+                        else
+                        {
+                            if($1->S_type == dataType::INT_TYPE)
+                            {
+                                symbol *result=new symbol;
+                                result->S_type=INT_TYPE;
+                                result->S_flag=ARRAY_FLAG;
+
+                                result->S_data.array_data.resize($1->S_data.dymention[0]);
+                                for(int i=0;i<$1->S_data.dymention[0];i++)
+                                {
+                                    result->S_data.array_data[i].array_data.resize($1->S_data.dymention[1]);
+                                    for(int j=0;j<$1->S_data.dymention[1];j++)
+                                    {
+                                        result->S_data.array_data[i].array_data[j].int_data= $1 -> S_data.array_data[i].array_data[j].int_data - $3->S_data.array_data[i].array_data[j].int_data;
+                                    }
+                                }
+                                $$ = result;
+                            }
+                            else if($1->S_type == dataType::REAL_TYPE)
+                            {
+                                symbol *result=new symbol;
+                                result->S_type=INT_TYPE;
+                                result->S_flag=ARRAY_FLAG;
+
+                                result->S_data.array_data.resize($1->S_data.dymention[0]);
+                                for(int i=0;i<$1->S_data.dymention[0];i++)
+                                {
+                                    result->S_data.array_data[i].array_data.resize($1->S_data.dymention[1]);
+                                    for(int j=0;j<$1->S_data.dymention[1];j++)
+                                    {
+                                        result->S_data.array_data[i].array_data[j].real_data= $1 -> S_data.array_data[i].array_data[j].real_data - $3->S_data.array_data[i].array_data[j].real_data;
+                                    }
+                                }
+                                $$ = result;
+                                for(auto a:$$->S_data.array_data)
+                                    cout<<a.real_data<<endl;
+                            }
+                        }
+                    }
                     else
-                            yyerror("operator error");
-                    cout <<"Reduce exp - exp"<<endl;
+                    {
+                        yyerror("operator error");
+                        YYABORT;
+                    }
                 }
                 ;
 
-factor:         term
+factor:         term    {$$ = $1;}
                 |factor '*' term
                 {
                     /* type check */
@@ -335,7 +507,7 @@ factor:         term
                             cout << "WARNING:type mismatch" << endl;
 
                     // array check
-                    if($1->S_flag != flag::ARRAY_FLAG)
+                    if($1->S_flag != flag::ARRAY_FLAG && $3->S_flag != flag::ARRAY_FLAG)
                     {
                         if($1->S_type == dataType::INT_TYPE)
                                 $$ = intConst($1->S_data.int_data * $3->S_data.int_data);
@@ -347,7 +519,7 @@ factor:         term
                             YYABORT;
                         }
                     }
-                    else 
+                    else if($1->S_flag == flag::ARRAY_FLAG && $3->S_flag == flag::ARRAY_FLAG)
                     {
                         // dymention check
                         if($1->S_data.array_data.size() != $3->S_data.array_data.size())
@@ -362,20 +534,26 @@ factor:         term
                                 int sum=0;
                                 for(int i=0;i<$1->S_data.array_data.size();i++)
                                 {
-                                    sum += $1->S_data.array_data[i].int_data * $1->S_data.array_data[i].int_data;
+                                    sum += $1->S_data.array_data[i].int_data * $3->S_data.array_data[i].int_data;
                                     $$ = intConst(sum);
                                 }
                             }
                             else if($1->S_type == dataType::REAL_TYPE)
                             {
+                                cout<<"REAL"<<endl;
                                 double sum=0;
                                 for(int i=0;i<$1->S_data.array_data.size();i++)
                                 {
-                                    sum += $1->S_data.array_data[i].real_data * $1->S_data.array_data[i].real_data;
+                                    sum += $1->S_data.array_data[i].real_data * $3->S_data.array_data[i].real_data;
                                     $$ = realConst(sum);
                                 }
                             }
                         }
+                    }
+                    else
+                    {
+                        yyerror("operator error");
+                        YYABORT;
                     }
                 }
                 |factor '/' term 
@@ -433,7 +611,7 @@ arguments:      expressions
                 |arguments ',' expressions
                 ;
 
-const_exp:      INT_VALUE { $$=intConst($1); }
+const_exp:      INT_VALUE { $$=intConst($1);}
                 |REAL_VALUE {$$ = realConst($1); }
                 |TRUE {$$ = boolConst($1);}
                 |FALSE {$$ = boolConst($1);}
