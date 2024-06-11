@@ -434,7 +434,6 @@ expressions:    factor {$$ = $1;}
                                 $$ = realConst($1->S_data.real_data + $3->S_data.real_data);
                         else
                                 yyerror("operator error");
-                        printf("%f\n",$$->S_data.real_data);
                     }
                     //  is array
                     else if(isArray($1) && isArray($1))
@@ -492,17 +491,25 @@ expressions:    factor {$$ = $1;}
                    /* type check */
                     if($1->S_type != $3->S_type)
                     {
-                            // cout << "WARNING:type mismatch" << endl;
-                        yyerror("type mismatch");
-                        YYABORT;
+                        cout << "WARNING:type mismatch" << endl;
+                        // yyerror("type mismatch");
+                        // YYABORT;
                     }
                     //  not array
-                    else if(!isArray($1) && !isArray($1))
+                    if(!isArray($1) && !isArray($3))
                     {
-                        if($1->S_type == dataType::INT_TYPE)
-                                $$ = intConst($1->S_data.int_data + $3->S_data.int_data);
-                        else if($1->S_type == dataType::REAL_TYPE)
-                                $$ = realConst($1->S_data.real_data + $3->S_data.real_data);
+                        // int int 
+                        if($1->S_type == dataType::INT_TYPE && $3->S_type == dataType::INT_TYPE)
+                                $$ = intConst($1->S_data.int_data - $3->S_data.int_data);
+                        // real int
+                        else if($1->S_type == dataType::REAL_TYPE && $3->S_type == dataType::INT_TYPE)
+                                $$ = realConst($1->S_data.real_data - $3->S_data.int_data);
+                        //int real
+                        else if($1->S_type == dataType::INT_TYPE && $3->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.int_data - $3->S_data.real_data);
+                        // real real
+                        else if($1->S_type == dataType::REAL_TYPE && $3->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.real_data - $3->S_data.real_data);
                         else
                                 yyerror("operator error");
                     }
@@ -564,23 +571,28 @@ factor:         term    {$$ = $1;}
                     /* type check */
                     if($1->S_type != $3->S_type)
                     {
-                        yyerror("ERROR: type mismatch");
-                        YYABORT;
-                        // cout << "WARNING:type mismatch" << endl;
+                        // yyerror("ERROR: type mismatch");
+                        // YYABORT;
+                        cout << "WARNING:type mismatch" << endl;
                     }
 
-                    // array check
-                    if($1->S_flag != flag::ARRAY_FLAG && $3->S_flag != flag::ARRAY_FLAG)
+                    // not array
+                    if(!isArray($1) && !isArray($3))
                     {
-                        if($1->S_type == dataType::INT_TYPE)
+                        // int int 
+                        if($1->S_type == dataType::INT_TYPE && $3->S_type == dataType::INT_TYPE)
                                 $$ = intConst($1->S_data.int_data * $3->S_data.int_data);
-                        else if($1->S_type == dataType::REAL_TYPE)
+                        // real int
+                        else if($1->S_type == dataType::REAL_TYPE && $3->S_type == dataType::INT_TYPE)
+                                $$ = realConst($1->S_data.real_data * $3->S_data.int_data);
+                        //int real
+                        else if($1->S_type == dataType::INT_TYPE && $3->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.int_data * $3->S_data.real_data);
+                        // real real
+                        else if($1->S_type == dataType::REAL_TYPE && $3->S_type == dataType::REAL_TYPE)
                                 $$ = realConst($1->S_data.real_data * $3->S_data.real_data);
                         else
-                        {
-                            yyerror("operator error");
-                            YYABORT;
-                        }
+                                yyerror("operator error");
                     }
                     else if($1->S_flag == flag::ARRAY_FLAG && $3->S_flag == flag::ARRAY_FLAG)
                     {
