@@ -1,33 +1,36 @@
 %{
+#include<vector>
 #include "lex.yy.cpp"
 #include "symbolStack.hpp"
-#include "symbol.hpp"
 
 #define Trace(t)        printf(t)
 void yyerror(char *msg);
 symbolStack symStack;
+
 %}
 
 %union { 
     class symbol *sym;
     double real_value;
+    // enum dataType d;
     char dType[10];
     char identity[256];
 }
 
-%token <real_value> INT_VALUE REAL_VALUE TRUE FALSE
 
-%token <identity> ID 
-
-%type <real_value> expressions factor term
+%type <sym> expressions factor term  arrayValue
 /* %type <real_value> bool_expression */
-%type <real_value> const_exp
-%type <dType> type
+%type <sym> const_exp
+%type <dType> Type
+%type <sym> dymention
+
 
 /* tokens */
+
+%token <real_value> INT_VALUE REAL_VALUE TRUE FALSE
+%token <identity> ID 
 %token VAR VAL // define
 %token BOOL CHAR INT REAL CLASS STR// data type
-%token TRUE FALSE //bool value
 %token NOT_EQUAL MORE_EQUAL LESS_EQUAL EQUAL// bool operator
 /* %token PLUS MINUS MULTIPLE DIVISION // operator */
 %token IF ELSE FOR DO WHILE SWITCH CASE FUNCTION RETURN MAIN PRINT PRINTLN // key word
@@ -55,53 +58,85 @@ declaration:    variable
                 |functionDeclare
                 ;
 
-variable:       VAR ID ':' type ';'
+variable:       VAR ID ':' Type ';'
                 {
                     symbol s($2);
                     s.S_type=stringToType($4);
                     symStack.insert($2,s);
                 }
-                |VAR ID ':' type '=' const_exp ';'
+                |VAR ID ':' Type '=' const_exp ';'
                 {
                     symbol s($2);
-                    s.S_type=stringToType($4);
-                    if(s.S_type != $3)
+                    s.S_type = stringToType($4);
+                    s.S_data = $6->S_data;
                     symStack.insert($2,s);
-
-
                 }
                 |array
                 ;
 
-constant:       VAL ID ':' type '=' expressions ';'
-                |VAL ID ':' type dymention '=' array ';'
+constant:       VAL ID ':' Type '=' expressions ';'
+                {
+                    symbol s($2);
+                    s.S_type=stringToType($4);
+                    s.S_data.real_data=$6->S_data.real_data;
+                    s.S_flag=CONSTANT;
+                    symStack.insert($2,s);
+                    delete $6;
+                }
+                |VAL ID ':' Type dymention '=' array ';'
                 ;
 
-array:      VAR ID ':' type dymention '=' '{' arrayValue '}' ';'
-            |VAR ID ':' type dymention ';'
+array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
+            {
+                symbol s($2);
+                s.S_type=stringToType($4);
+                s.S_flag=ARRAY_FLAG;
+                symStack.insert($2,s);
+                printf("size: %d\n",$5->S_data.dymention.size());
+
+            }
+            |VAR ID ':' Type dymention ';'
+            {
+                symbol s($2);
+                s.S_type=stringToType($4);
+                s.S_flag=ARRAY_FLAG;
+                symStack.insert($2,s);
+                printf("size: %d\n",$5->S_data.dymention.size());
+            }
             ;
 
 dymention:  '[' INT_VALUE ']'
+            {
+                symbol *s = new symbol;
+                s->S_data.dymention.push_back((int)$2);
+                $$ = s;
+            }
             |dymention dymention
+            {
+                // symbol s;
+                // s.S_data.dymention.insert(s.S_data.dymention.end(),$1->S_data.dymention.begin(),$1->S_data.dymention.begin());
+                // s.S_data.dymention.insert(s.S_data.dymention.end(),$2->S_data.dymention.begin(),$1->S_data.dymention.begin());
+                // $$ = &s;
+            }
             ;
 
-arrayValue: expressions
-            |arrayValue ',' arrayValue
+arrayValue: const_exp
+            |arrayValue ',' const_exp
             |'{' arrayValue '}'
             |'{' arrayValue '}' ',' '{' arrayValue '}'
             ;
 
-functionDeclare:    FUNCTION ID '(' parameter ')' ':' type
+functionDeclare:    FUNCTION ID '(' parameter ')' ':' Type
                     '{'
-                    statments
-                    RETURN expressions ';'
+                        statments
+                        RETURN expressions ';'
                     '}'
                     |FUNCTION MAIN '(' parameter ')'
                     '{'
-                    statments
+                        statments
                     '}'
 
-parameter:  ID ':' type
+parameter:  ID ':' Type
             |parameter ',' parameter
             |
             ;
@@ -117,7 +152,8 @@ statment:   simple
             ;
 
 simple:     print
-            |ID '=' expressions ';'
+            |ID '=' expressions ';' 
+            
             ;
 
 print:      PRINT '(' expressions ')' ';'
@@ -131,10 +167,18 @@ block:      '{'
             '}'
 
 
-type:       INT {strcpy($$,"INT");}
-            |REAL {strcpy($$,"REAL");}
-            |CHAR {strcpy($$,"CHAR");}
-            |BOOL {strcpy($$,"BOOL");}
+Type:       INT 
+            /* {$$ = INT_TYPE;} */
+            {strcpy($$,"INT");}
+            |REAL 
+            /* {$$ = REAL_TYPE;} */
+            {strcpy($$ ,"REAL");}
+            |CHAR 
+            /* {$$ = CHAR_TYPE;} */
+            {strcpy($$ ,"CHAR");}
+            |BOOL 
+            /* {$$ = BOOL_TYPE;} */
+            {strcpy($$,"BOOL");}
             ;
 
 conditional:    IF '(' bool_expression ')'
@@ -143,33 +187,77 @@ conditional:    IF '(' bool_expression ')'
                 '}'
 
 expressions:    factor
-                |expressions '+' factor {$$ = $1+$3;}
-                |expressions '-' factor {$$ = $1-$3;}
-                /* |bool_expression */
+                |expressions '+' factor 
+                {
+                    /* type check */
+                    if($1->S_type != $3->S_type)
+                            cout << "WARNING:type mismatch" << endl;
+
+                    
+                    if($1->S_type == dataType::INT_TYPE)
+                            $$ = intConst($1->S_data.int_data + $3->S_data.int_data);
+                    else if($1->S_type == dataType::REAL_TYPE)
+                            $$ = realConst($1->S_data.real_data + $3->S_data.real_data);
+                    else
+                            yyerror("operator error");
+                }
+                |expressions '-' factor
+                {
+                    /* type check */
+                    if($1->S_type != $3->S_type)
+                            cout << "WARNING:type mismatch" << endl;
+
+                    
+                    if($1->S_type == dataType::INT_TYPE)
+                            $$ = intConst($1->S_data.int_data - $3->S_data.int_data);
+                    else if($1->S_type == dataType::REAL_TYPE)
+                            $$ = realConst($1->S_data.real_data - $3->S_data.real_data);
+                    else
+                            yyerror("operator error");
+                    cout <<"Reduce exp - exp"<<endl;
+                }
                 ;
 
 factor:         term
-                |factor '*' term {$$ = $1*$3;}
+                |factor '*' term
+                {
+                    /* type check */
+                    if($1->S_type != $3->S_type)
+                            cout << "WARNING:type mismatch" << endl;
+
+                    
+                    if($1->S_type == dataType::INT_TYPE)
+                            $$ = intConst($1->S_data.int_data * $3->S_data.int_data);
+                    else if($1->S_type == dataType::REAL_TYPE)
+                            $$ = realConst($1->S_data.real_data * $3->S_data.real_data);
+                    else
+                            yyerror("operator error");
+                }
                 |factor '/' term 
                 {
-                    if($3 == 0)
-                    {
-                        yyerror("can't division 0\n");
-                        YYABORT;
-                    }
-                    $$ = $1 / $3;
+                    /* type check */
+                    if($1->S_type != $3->S_type)
+                            cout << "WARNING:type mismatch" << endl;
+
+                    
+                    if($1->S_type == dataType::INT_TYPE)
+                            $$ = intConst($1->S_data.int_data / $3->S_data.int_data);
+                    else if($1->S_type == dataType::REAL_TYPE)
+                            $$ = realConst($1->S_data.real_data / $3->S_data.real_data);
+                    else
+                            yyerror("operator error");
+                
                 }
-                /* |factor '*' factor */
                 ;
 
 term:           '(' expressions ')' {$$ = $2;}
-                |ID
+                |ID { $$ = symStack.lookup($1); }
                 |ID '[' INT_VALUE ']'
                 |functionCall
                 |'-' expressions %prec NEGATIVE
                 {
                 }
-                |const_exp
+                |const_exp {$$ = $1;}
 
                 ;
 
@@ -180,34 +268,10 @@ inputParameter: expressions
                 |inputParameter ',' expressions
                 ;
 
-const_exp:      INT_VALUE 
-                /* {
-                    symbol *s=new symbol;
-                    s->S_type=INT_TYPE;
-                    s->S_data.int_data=(int)$1;
-                    $$=s
-                } */
-                |REAL_VALUE
-                /* {
-                    symbol *s=new symbol;
-                    s->S_type=REAL_TYPE;
-                    s->S_data.int_data=(double)$1;
-                    $$=s
-                } */
-                |TRUE {$$ = 1.0;}
-                /* {
-                    symbol *s=new symbol;
-                    s->S_type=BOOL_TYPE;
-                    s->S_data.bool_data=true;
-                    $$=s
-                } */
-                |FALSE {$$ = 0.0;}
-                /* {
-                    symbol *s=new symbol;
-                    s->S_type=BOOL_TYPE;
-                    s->S_data.bool_data=false;
-                    $$=s
-                } */
+const_exp:      INT_VALUE { $$=intConst($1); }
+                |REAL_VALUE {$$ = realConst($1); }
+                |TRUE {$$ = boolConst($1);}
+                |FALSE {$$ = boolConst($1);}
                 ;
 
 bool_expression:    expressions '>' expressions
