@@ -3,6 +3,10 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <iostream>
+// #pragma once
+
 
 using namespace std;
 
@@ -12,8 +16,9 @@ struct data
     int int_data = 0;
     float real_data = 0.0;
     bool bool_data = false;
-    vector<int> dymention;
     string string_data = "";
+
+    vector<int> dymention;
     vector<data> array_data;
 };
 

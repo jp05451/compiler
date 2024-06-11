@@ -1,11 +1,8 @@
 #ifndef SYMBOLTABLE_HPP
 #define SYMBOLTABLE_HPP
-#include <vector>
-#include <set>
-#include <string>
-#include <algorithm>
-#include <iostream>
+
 #include "symbol.hpp"
+
 
 using namespace std;
 

@@ -1,7 +1,4 @@
 #include "symbolTable.hpp"
-#include <string>
-#include <vector>
-#pragma once
 
 class symbolStack
 {
@@ -23,7 +20,7 @@ public:
         symbol.id = id;
         if (lookup(id) == NULL)
             tables.back().table.push_back(symbol);
-
+        
         if (!isGlobal(id))
             tables.back().table.back().index = tables.back().index++;
     }
@@ -64,6 +61,7 @@ public:
     }
     bool isGlobal(string id)
     {
+
         return tables[0].lookup(id) != NULL && (lookup(id) == NULL || tables.size() == 1);
     }
     int get_index(string id)
