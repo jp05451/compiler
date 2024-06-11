@@ -19,9 +19,9 @@ symbolStack symStack;
 
 %token <identity> ID 
 
-%type <sym> expressions factor term
+%type <real_value> expressions factor term
 /* %type <real_value> bool_expression */
-%type <sym> const_exp
+%type <real_value> const_exp
 %type <dType> type
 
 /* tokens */
@@ -143,18 +143,26 @@ conditional:    IF '(' bool_expression ')'
                 '}'
 
 expressions:    factor
-                |expressions '+' factor
-                |expressions '-' factor
+                |expressions '+' factor {$$ = $1+$3;}
+                |expressions '-' factor {$$ = $1-$3;}
                 /* |bool_expression */
                 ;
 
 factor:         term
-                |factor '*' term
-                |factor '/' term
+                |factor '*' term {$$ = $1*$3;}
+                |factor '/' term 
+                {
+                    if($3 == 0)
+                    {
+                        yyerror("can't division 0\n");
+                        YYABORT;
+                    }
+                    $$ = $1 / $3;
+                }
                 /* |factor '*' factor */
                 ;
 
-term:           '(' expressions ')'
+term:           '(' expressions ')' {$$ = $2;}
                 |ID
                 |ID '[' INT_VALUE ']'
                 |functionCall
@@ -169,37 +177,37 @@ term:           '(' expressions ')'
 functionCall:   ID '(' inputParameter ')';
 
 inputParameter: expressions
-                |inputParameter ',' inputParameter
+                |inputParameter ',' expressions
                 ;
 
-const_exp:      INT_VALUE
-                {
+const_exp:      INT_VALUE 
+                /* {
                     symbol *s=new symbol;
                     s->S_type=INT_TYPE;
                     s->S_data.int_data=(int)$1;
                     $$=s
-                }
+                } */
                 |REAL_VALUE
-                {
+                /* {
                     symbol *s=new symbol;
                     s->S_type=REAL_TYPE;
                     s->S_data.int_data=(double)$1;
                     $$=s
-                }
-                |TRUE
-                {
+                } */
+                |TRUE {$$ = 1.0;}
+                /* {
                     symbol *s=new symbol;
                     s->S_type=BOOL_TYPE;
                     s->S_data.bool_data=true;
                     $$=s
-                }
-                |FALSE
-                {
+                } */
+                |FALSE {$$ = 0.0;}
+                /* {
                     symbol *s=new symbol;
                     s->S_type=BOOL_TYPE;
                     s->S_data.bool_data=false;
                     $$=s
-                }
+                } */
                 ;
 
 bool_expression:    expressions '>' expressions
