@@ -180,17 +180,17 @@ println   {token(PRINTLN);}
                 }
     /*==========Escape sequences==========*/
 
-<STRING>\\\\    {strcat(strTemp,"\\");}
+<STRING>\\\\    {strcat(strTemp,"\\\\");}
 
-<STRING>\\t     {strcat(strTemp,"\t");}
+<STRING>\\t     {strcat(strTemp,"\\t");}
 
-<STRING>\\n     {strcat(strTemp,"\n");}
+<STRING>\\n     {strcat(strTemp,"\\n");}
 
-<STRING>\\\"    {strcat(strTemp,"\"");}
+<STRING>\\\"    {strcat(strTemp,"\\\"");}
 
-<STRING>\\\'    {strcat(strTemp,"\'");}
+<STRING>\\\'    {strcat(strTemp,"\\\'");}
 
-<STRING>\\?     {strcat(strTemp,"\?");} 
+<STRING>\\?     {strcat(strTemp,"\\\?");} 
 <STRING>\n      {
                     printf("Bad Charactor\n");      
                     linenum++;        

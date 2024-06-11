@@ -67,6 +67,13 @@ void G_op(op oper, symbol *a, symbol *b)
         //     output << b->id;
     }
 }
+void G_print(string str)
+{
+    output << "printf(\""
+           << str
+           << "\");"
+           << endl;
+}
 
 void G_print(symbol *s)
 {

@@ -385,8 +385,11 @@ print:      PRINT '(' expressions ')' ';'
             }
             |PRINT '(' STR ')' ';'
             {
-                // cout<<$3;
-                output<<"printf(\""
+                // if(strcmp($3,"\n")==0)
+                //     G_print("\\n");
+                // else
+                    G_print($3);
+                cout<<$3;
             }
             |PRINTLN '(' STR ')' ';'
             {
