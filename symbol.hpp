@@ -118,6 +118,11 @@ bool isArray(symbol *s)
     return s->S_flag == ARRAY_FLAG;
 }
 
+bool typeMismatch(symbol *a, symbol *b)
+{
+    return a->S_type == b->S_type;
+}
+
 symbol *intConst(int value_)
 {
     symbol *s = new symbol();
