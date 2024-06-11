@@ -18,6 +18,7 @@ vector<double> arrayData;
     // enum dataType d;
     char dType[10];
     char identity[256];
+    char string[256];
 }
 
 
@@ -32,8 +33,9 @@ vector<double> arrayData;
 
 %token <real_value> INT_VALUE REAL_VALUE TRUE FALSE
 %token <identity> ID 
+%token <string> STR // define
 %token VAR VAL // define
-%token BOOL CHAR INT REAL CLASS STR// data type
+%token BOOL CHAR INT REAL CLASS // data type
 %token NOT_EQUAL MORE_EQUAL LESS_EQUAL EQUAL// bool operator
 /* %token PLUS MINUS MULTIPLE DIVISION // operator */
 %token IF ELSE FOR DO WHILE SWITCH CASE FUNCTION RETURN MAIN PRINT PRINTLN // key word
@@ -329,7 +331,13 @@ print:      PRINT '(' expressions ')' ';'
                 cout<<endl;
             }
             |PRINT '(' STR ')' ';'
+            {
+                cout<<$3;
+            }
             |PRINTLN '(' STR ')' ';'
+            {
+                cout<<$3<<endl;
+            }
             ;
 
 block:      '{'
@@ -410,7 +418,7 @@ expressions:    factor {$$ = $1;}
                                 }
                                 $$ = result;
                             }
-                            
+
                             // double array
                             else if($1->S_type == dataType::REAL_TYPE)
                             {
