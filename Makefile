@@ -1,13 +1,13 @@
 all: compiler clean
 
-compiler: lex.yy.cpp symbol.hpp symboltable.hpp y.tab.cpp
-	g++  y.tab.cpp symbol.hpp symboltable.hpp -ll -ly -std=c++17 -Wno-deprecated-register
+compiler: lex.yy.cpp symbol.hpp symbolTable.hpp y.tab.cpp symbolStack.hpp
+	g++ y.tab.cpp symbol.hpp symbolTable.hpp symbolStack.hpp -ll  -std=c++17 -Wno-deprecated-register
 
 lex.yy.cpp: scanner.l
 	lex -o lex.yy.cpp scanner.l
 
 y.tab.cpp: parser.y
-	bison -v -d -o y.tab.cpp parser.y
+	yacc -v -d -o y.tab.cpp parser.y
 
 
 clean:
