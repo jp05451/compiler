@@ -91,17 +91,31 @@ array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
                 symbol s($2);
                 s.S_type=stringToType($4);
                 s.S_flag=ARRAY_FLAG;
-                symStack.insert($2,s);
-                printf("size: %d\n",$5->S_data.dymention.size());
+                s.S_data.dymention=$5->S_data.dymention;
+                s.S_data.array_data=$8->S_data.array_data;
+                // printf("%d\n",s.S_data.array_data.size());
+                // if(s.S_data.dymention[0] < s.S_data.array_data.size())
+                // {
+                //     yyerror("ERROR: too many dimensions\n");
+                //     YYABORT;
+                // }
+                // else
+                // {
+                //     s.S_data.array_data.resize(s.S_data.dymention[0]);
+                // }
 
+                symStack.insert($2,s);
+                delete $5;
+                delete $8;
             }
             |VAR ID ':' Type dymention ';'
             {
                 symbol s($2);
                 s.S_type=stringToType($4);
                 s.S_flag=ARRAY_FLAG;
+                s.S_data.dymention=$5->S_data.dymention;
                 symStack.insert($2,s);
-                printf("size: %d\n",$5->S_data.dymention.size());
+                delete $5;
             }
             ;
 
@@ -111,19 +125,28 @@ dymention:  '[' INT_VALUE ']'
                 s->S_data.dymention.push_back((int)$2);
                 $$ = s;
             }
-            |dymention dymention
+            |dymention '[' INT_VALUE ']'
             {
-                // symbol s;
-                // s.S_data.dymention.insert(s.S_data.dymention.end(),$1->S_data.dymention.begin(),$1->S_data.dymention.begin());
-                // s.S_data.dymention.insert(s.S_data.dymention.end(),$2->S_data.dymention.begin(),$1->S_data.dymention.begin());
-                // $$ = &s;
+                $1->S_data.dymention.push_back($3);
+                $$ = $1;
             }
             ;
 
-arrayValue: const_exp
-            |arrayValue ',' const_exp
-            |'{' arrayValue '}'
-            |'{' arrayValue '}' ',' '{' arrayValue '}'
+arrayValue: expressions
+            {
+                symbol *s = new symbol;
+                s->S_flag = ARRAY_FLAG;
+                s->S_data.array_data.push_back($1->S_data);
+                delete $1;
+                $$ = s;
+            }
+            |arrayValue ',' expressions
+            {
+                $1->S_data.array_data.push_back($3->S_data);
+                $$ = $1;
+            }
+            /* |'{' arrayValue '}'
+            |'{' arrayValue '}' ',' arrayValue */
             ;
 
 functionDeclare:    FUNCTION ID '(' parameter ')' ':' Type
