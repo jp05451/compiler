@@ -154,11 +154,7 @@ constant:       VAL ID ':' Type '=' expressions ';'
 
 array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
             {
-                if(stringToType($4) != $8->S_type)
-                {
-                    yyerror("type mismatch");
-                    YYABORT;
-                }
+                
                 if(symStack.lookup($2)!=NULL)
                 {
                     yyerror("ERROR: duplicate declaration");
@@ -169,6 +165,12 @@ array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
                 s.S_flag=ARRAY_FLAG;
                 s.S_data.dymention=$5->S_data.dymention;
 
+                if(stringToType($4) != $8->S_type)
+                {
+                    cout<<"WARRNING: type mismatch"<<endl;
+                    // yyerror("type mismatch");
+                    // YYABORT;
+                }
 
                 // offset the array
                 if(s.S_data.dymention.size()==2)
