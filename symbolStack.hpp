@@ -24,8 +24,8 @@ public:
         if (lookup(id) == NULL)
             tables.back().table.push_back(symbol);
 
-        // if (!isGlobal(id))
-        //     tables.back().table.back().index = tables.back().index++;
+        if (!isGlobal(id))
+            tables.back().table.back().index = tables.back().index++;
     }
     
     symbol *lookup(string id)

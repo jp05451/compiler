@@ -12,6 +12,7 @@ struct data
     int int_data = 0;
     float real_data = 0.0;
     bool bool_data = false;
+    vector<int> dymention;
     string string_data = "";
     vector<data> array_data;
 };
@@ -26,7 +27,7 @@ enum dataType
     NONE_TYPE
 };
 
-enum dataFlag
+enum flag
 {
     VARIABLE,
     CONSTANT,
@@ -55,7 +56,7 @@ public:
     int param_num = 0;
     struct data S_data;
     dataType S_type;
-    dataFlag S_flag;
+    flag S_flag;
     bool init = false;
     int index = -1;
 
@@ -74,8 +75,44 @@ public:
 
     bool isConst()
     {
-        return S_flag == dataFlag::CONSTANT;
+        return S_flag == flag::CONSTANT;
     }
 };
+
+symbol *intConst(int value_)
+{
+    symbol *s = new symbol();
+    s->S_data.int_data = value_;
+    s->S_type = dataType::INT_TYPE;
+    s->S_flag = flag::CONSTANT;
+    return s;
+}
+
+symbol *realConst(float value_)
+{
+    symbol *s = new symbol();
+    s->S_data.real_data = value_;
+    s->S_type = dataType::REAL_TYPE;
+    s->S_flag = flag::CONSTANT;
+    return s;
+}
+
+symbol *boolConst(bool value_)
+{
+    symbol *s = new symbol();
+    s->S_data.bool_data = value_;
+    s->S_type = dataType::BOOL_TYPE;
+    s->S_flag = flag::CONSTANT;
+    return s;
+}
+
+symbol *stringConst(string *value_)
+{
+    symbol *s = new symbol();
+    s->S_data.string_data = *value_;
+    s->S_type = dataType::STRING_TYPE;
+    s->S_flag = flag::CONSTANT;
+    return s;
+}
 
 #endif
