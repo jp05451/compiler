@@ -93,17 +93,19 @@ array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
                 s.S_flag=ARRAY_FLAG;
                 s.S_data.dymention=$5->S_data.dymention;
                 s.S_data.array_data=$8->S_data.array_data;
-                // printf("%d\n",s.S_data.array_data.size());
-                // if(s.S_data.dymention[0] < s.S_data.array_data.size())
-                // {
-                //     yyerror("ERROR: too many dimensions\n");
-                //     YYABORT;
-                // }
-                // else
-                // {
-                //     s.S_data.array_data.resize(s.S_data.dymention[0]);
-                // }
-
+                int totalDymention=0;
+                for (auto& n : s.S_data.dymention)
+                    totalDymention += n; //calculate total dymentions;
+                
+                if(totalDymention < s.S_data.array_data.size())
+                {
+                    yyerror("ERROR: too many dimensions\n");
+                    YYABORT;
+                }
+                else
+                {
+                    s.S_data.array_data.resize(s.S_data.dymention[0]);
+                }
                 symStack.insert($2,s);
                 delete $5;
                 delete $8;
@@ -160,7 +162,7 @@ functionDeclare:    FUNCTION ID '(' parameter ')' ':' Type
                     '}'
 
 parameter:  ID ':' Type
-            |parameter ',' parameter
+            |parameter ',' ID ':' Type
             |
             ;
 
@@ -179,7 +181,13 @@ simple:     print
             
             ;
 
-print:      PRINT '(' expressions ')' ';'
+print:      PRINT '(' expressions ')' ';' 
+            {
+                if( $3 -> S_type == dataType::INT_TYPE)
+                    cout<<$3->S_data.int_data;
+                if( $3 -> S_type == dataType::REAL_TYPE)
+                    cout<<$3->S_data.real_data;
+            }
             |PRINTLN '(' expressions ')' ';'
             |PRINT '(' STR ')' ';'
             |PRINTLN '(' STR ')' ';'
@@ -253,8 +261,40 @@ factor:         term
                             $$ = intConst($1->S_data.int_data * $3->S_data.int_data);
                     else if($1->S_type == dataType::REAL_TYPE)
                             $$ = realConst($1->S_data.real_data * $3->S_data.real_data);
+                    else if($1->S_flag == flag::ARRAY_FLAG)
+                    {
+                        if($1->S_data.array_data.size() != $3->S_data.array_data.size())
+                        {
+                            yyerror("dymention mismatch");
+                            YYABORT;
+                        }
+                        else
+                        {
+                            if($1->S_type == dataType::INT_TYPE)
+                            {
+                                int sum=0;
+                                for(int i=0;i<$1->S_data.array_data.size();i++)
+                                {
+                                    sum += $1->S_data.array_data[i].int_data * $1->S_data.array_data[i].int_data;
+                                    $$ = intConst(sum);
+                                }
+                            }
+                            else if($1->S_type == dataType::REAL_TYPE)
+                            {
+                                double sum=0;
+                                for(int i=0;i<$1->S_data.array_data.size();i++)
+                                {
+                                    sum += $1->S_data.array_data[i].real_data * $1->S_data.array_data[i].real_data;
+                                    $$ = realConst(sum);
+                                }
+                            }
+                        }
+                    }
                     else
+                    {
                             yyerror("operator error");
+                            YYABORT;
+                    }
                 }
                 |factor '/' term 
                 {
@@ -279,9 +319,14 @@ term:           '(' expressions ')' {$$ = $2;}
                 |functionCall
                 |'-' expressions %prec NEGATIVE
                 {
+                    if($2->S_type == dataType::INT_TYPE)
+                        $$ = intConst(-$2->S_data.int_data);
+                    else if($2->S_type == dataType::REAL_TYPE)
+                            $$ = realConst(-$2->S_data.real_data);
+                    else
+                            yyerror("operator error");
                 }
                 |const_exp {$$ = $1;}
-
                 ;
 
 

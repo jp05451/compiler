@@ -17,6 +17,15 @@ struct data
     vector<data> array_data;
 };
 
+// struct data &operator * (const struct data &a,const struct data &b)
+// {
+//     struct data d;
+//     d.int_data=a.int_data*b.int_data;
+//     d.int_data=a.real_data*b.real_data;
+//     d.bool_data=a.bool_data*b.real_data;
+//     return d;
+// }
+
 enum dataType
 {
     INT_TYPE,
