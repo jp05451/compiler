@@ -2,6 +2,7 @@
 #include<fstream>
 #include "lex.yy.cpp"
 #include "symbolStack.hpp"
+#include "codegen.hpp"
 
 #define Trace(t)        printf(t)
 void yyerror(string msg)
@@ -56,7 +57,6 @@ ofstream output;
 program:        declarations;
 
 declarations:   declaration declarations
-                {output<<"}";}
                 |
                 ;
 
@@ -75,6 +75,8 @@ variable:       VAR ID ':' Type ';'
                     symbol s($2);
                     s.S_type=stringToType($4);
                     symStack.insert($2,s);
+
+                    G_variable(&s);
                 }
                 |VAR ID ':' Type '=' expressions ';'
                 {
@@ -86,7 +88,20 @@ variable:       VAR ID ':' Type ';'
                     symbol s($2);
                     s.S_type = stringToType($4);
                     s.S_data = $6->S_data;
+                    s.init = true;
+
+                    if($6->S_type != s.S_type)
+                    {
+                        cout<<"WARRNING: type mismatch"<<endl;
+                        if($6->S_type=REAL_TYPE)
+                            s.S_data.int_data = (int)$6->S_data.real_data;
+
+                        if($6->S_type=INT_TYPE)
+                            s.S_data.real_data = (float)$6->S_data.int_data;
+                    }
                     symStack.insert($2,s);
+
+                    G_variable(&s);
                 }
                 |array
                 ;
@@ -132,8 +147,8 @@ constant:       VAL ID ':' Type '=' expressions ';'
                         s.S_data.array_data.resize(s.S_data.dymention[0]);
                     }
                     symStack.insert($2,s);
-                    // delete $5;
-                    // delete $8;
+                    delete $5;
+                    delete $8;
                 }
                 ;
 
@@ -259,13 +274,16 @@ functionDeclare:    FUNCTION ID '(' parameter ')' ':' Type
                     '}'
                     |FUNCTION MAIN '(' parameter ')'
                     {
-                            output<<"#include<stdio.h>"<<endl<<endl;
-                            output<<"int main()"<<endl;
-                            output<<"{"<<endl;
+                        G_main();
                     }
                     '{'
                         statments
+                    {
+                        G_end();
+                    }
                     '}'
+                    ;
+                    
 
 parameter:  ID ':' Type
             |parameter ',' ID ':' Type
@@ -300,36 +318,31 @@ simple:     print
 
 print:      PRINT '(' expressions ')' ';' 
             {
-                output<<"\tprintf(\"";
-                if($3->S_flag != flag::ARRAY_FLAG)
+                if(!isArray($3))
                 {
                     if($3->S_type == INT_TYPE)
                     {
                         cout<<$3->S_data.int_data;
-                        output<< $3->S_data.int_data ;
                     }
                     if($3->S_type == REAL_TYPE)
                     {
-                        cout<<$3->S_data.int_data;
-                        output<< $3->S_data.real_data ;
+                        cout<<$3->S_data.real_data;
                     }
                 }
-                else if($3->S_flag == flag::ARRAY_FLAG)
+                else if(isArray($3))
                 {
                     if($3->S_type == INT_TYPE)
                         for(auto a:$3->S_data.array_data)
                         {
                             cout<<a.int_data<<",";
-                            output<<a.int_data;
                         }
                     if($3->S_type == REAL_TYPE)
                         for(auto a:$3->S_data.array_data)
                         {
                             cout<<a.real_data<<",";
-                            cout<<a.real_data<<",";
                         }
                 }
-                output<<"\");"<<endl;
+                G_print($3);
             }
             |PRINTLN '(' expressions ')' ';'
             {
@@ -350,6 +363,7 @@ print:      PRINT '(' expressions ')' ';'
                             cout<<a.real_data;
                 }
                 cout<<endl;
+                G_println($3);
             }
             |PRINT '(' STR ')' ';'
             {
@@ -395,24 +409,33 @@ conditional:    IF '(' bool_expression ')'
 expressions:    factor {$$ = $1;}
                 |expressions '+' factor 
                 {
+
                     /* type check */
                     if($1->S_type != $3->S_type)
                     {
-                            // cout << "WARNING:type mismatch" << endl;
-                        yyerror("type mismatch");
-                        YYABORT;
+                        cout << "WARNING:type mismatch" << endl;
+                        // yyerror("type mismatch");
+                        // YYABORT;
                     }
                     //  not array
-                    else if(!isArray($1) && !isArray($1))
+                    if(!isArray($1) && !isArray($3))
                     {
-                        if($1->S_type == dataType::INT_TYPE)
+                        // int int 
+                        if($1->S_type == dataType::INT_TYPE && $3->S_type == dataType::INT_TYPE)
                                 $$ = intConst($1->S_data.int_data + $3->S_data.int_data);
-                        else if($1->S_type == dataType::REAL_TYPE)
+                        // real int
+                        else if($1->S_type == dataType::REAL_TYPE && $3->S_type == dataType::INT_TYPE)
+                                $$ = realConst($1->S_data.real_data + $3->S_data.int_data);
+                        //int real
+                        else if($1->S_type == dataType::INT_TYPE && $3->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.int_data + $3->S_data.real_data);
+                        // real real
+                        else if($1->S_type == dataType::REAL_TYPE && $3->S_type == dataType::REAL_TYPE)
                                 $$ = realConst($1->S_data.real_data + $3->S_data.real_data);
                         else
                                 yyerror("operator error");
+                        printf("%f\n",$$->S_data.real_data);
                     }
-
                     //  is array
                     else if(isArray($1) && isArray($1))
                     {
@@ -462,7 +485,7 @@ expressions:    factor {$$ = $1;}
                         yyerror("operator error");
                         YYABORT;
                     }
-                    cout <<"Reduce exp + exp"<<endl;
+                    // cout <<"Reduce exp + exp"<<endl;
                 }
                 |expressions '-' factor
                 {
@@ -683,6 +706,15 @@ int main(int argc,char **argv)
     yyin = fopen(argv[1], "r");         /* open input file */
     
     string outputFile="output.c";
+    /* for(int i=0;i<argc;i++)
+    {
+        if(strcmp(argv[i],"-o") == 0)
+        {
+            outputFile=argv[++i];
+            outputFile+=".c";
+        }
+    }
+    cout<<outputFile<<endl; */
     output.open(outputFile);
 
 
