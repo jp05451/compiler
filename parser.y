@@ -89,16 +89,19 @@ variable:       VAR ID ':' Type ';'
                     s.S_type = stringToType($4);
                     s.S_data = $6->S_data;
                     s.init = true;
-
-                    if($6->S_type != s.S_type)
+                    if(typeMismatch(&s,$6))
                     {
                         cout<<"WARRNING: type mismatch"<<endl;
-                        if(s.S_type=REAL_TYPE)
-                            s.S_data.real_data = (int)$6->S_data.int_data;
-
-                        if(s.S_type=INT_TYPE)
-                            s.S_data.int_data = (float)$6->S_data.real_data;
+                        if(s.S_type==dataType::REAL_TYPE)
+                        {
+                            s.S_data.real_data = $6->S_data.int_data;
+                        }
+                        else if(s.S_type==INT_TYPE)
+                        {
+                            s.S_data.int_data = $6->S_data.real_data;
+                        }
                     }
+
                     symStack.insert($2,s);
 
                     G_variable(&s);
@@ -433,9 +436,10 @@ expressions:    factor {$$ = $1;}
                 {
 
                     /* type check */
-                    if($1->S_type != $3->S_type)
+                    if(typeMismatch($1,$3))
                     {
-                        cout << "WARNING:type mismatch" << endl;
+                        cout << "WARNING: type mismatch" << endl;
+
                         // yyerror("type mismatch");
                         // YYABORT;
                     }
