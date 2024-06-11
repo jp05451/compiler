@@ -17,7 +17,6 @@ void G_op(op oper, symbol *a, symbol *b)
     if (isArray(a) || isArray(b))
         return;
 
-
     if (a->isConst())
     {
         if (a->S_type == INT_TYPE)
@@ -69,8 +68,6 @@ void G_op(op oper, symbol *a, symbol *b)
     }
 }
 
-
-
 void G_print(symbol *s)
 {
     output << "printf(\"";
@@ -88,14 +85,20 @@ void G_print(symbol *s)
     else if (isArray(s))
     {
         if (s->S_type == INT_TYPE)
-            for (auto a : s->S_data.array_data)
+            // for (auto a : s->S_data.array_data)
+            for (int i = 0; i < s->S_data.array_data.size(); i++)
             {
-                output << a.int_data << ",";
+                output << s->S_data.array_data[i].int_data;
+                if (i != s->S_data.array_data.size() - 1)
+                    output << ",";
             }
         if (s->S_type == REAL_TYPE)
-            for (auto a : s->S_data.array_data)
+            // for (auto a : s->S_data.array_data)
+            for (int i = 0; i < s->S_data.array_data.size(); i++)
             {
-                output << a.real_data << ",";
+                output << s->S_data.array_data[i].real_data;
+                if (i != s->S_data.array_data.size() - 1)
+                    output << ",";
             }
     }
     output << "\");" << endl;
@@ -118,14 +121,20 @@ void G_println(symbol *s)
     else if (isArray(s))
     {
         if (s->S_type == INT_TYPE)
-            for (auto a : s->S_data.array_data)
+            // for (auto a : s->S_data.array_data)
+            for (int i = 0; i < s->S_data.array_data.size(); i++)
             {
-                output << a.int_data << ",";
+                output << s->S_data.array_data[i].int_data;
+                if (i != s->S_data.array_data.size() - 1)
+                    output << ",";
             }
         if (s->S_type == REAL_TYPE)
-            for (auto a : s->S_data.array_data)
+            // for (auto a : s->S_data.array_data)
+            for (int i = 0; i < s->S_data.array_data.size(); i++)
             {
-                output << a.real_data << ",";
+                output << s->S_data.array_data[i].real_data;
+                if (i != s->S_data.array_data.size() - 1)
+                    output << ",";
             }
     }
     output << "\\n\");" << endl;
