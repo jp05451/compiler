@@ -9,4 +9,5 @@ example.old
 *.tab.*
 *.yy.*
 a.out
-output*
+output
+output.c

@@ -1,6 +1,6 @@
 fun main () {
 	print(123.456);
 	print("\n");
-	println("\n");
+	println("good job");
 	println(123.456);
 }
