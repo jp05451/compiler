@@ -385,14 +385,12 @@ print:      PRINT '(' expressions ')' ';'
             }
             |PRINT '(' STR ')' ';'
             {
-                // if(strcmp($3,"\n")==0)
-                //     G_print("\\n");
-                // else
-                    G_print($3);
+                G_print($3);
                 cout<<$3;
             }
             |PRINTLN '(' STR ')' ';'
             {
+                G_print(strcat($3,"\\n"));
                 cout<<$3<<endl;
             }
             ;
@@ -400,12 +398,14 @@ print:      PRINT '(' expressions ')' ';'
 block:      '{'
             {
                 symStack.push();
+                output<<"{"<<endl;
             }
                 statments
             '}'
             {
                 symStack.dump();
                 symStack.pop();
+                output<<"}"<<endl;
             }
 
 
