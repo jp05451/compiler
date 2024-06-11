@@ -1,5 +1,5 @@
 %{
-#include<vector>
+#include<fstream>
 #include "lex.yy.cpp"
 #include "symbolStack.hpp"
 
@@ -10,6 +10,7 @@ void yyerror(string msg)
 }
 symbolStack symStack;
 vector<double> arrayData;
+ofstream output;
 %}
 
 %union { 
@@ -54,7 +55,8 @@ vector<double> arrayData;
 %%
 program:        declarations;
 
-declarations:   declaration {symStack.push();} declarations
+declarations:   declaration declarations
+                {output<<"}";}
                 |
                 ;
 
@@ -256,6 +258,11 @@ functionDeclare:    FUNCTION ID '(' parameter ')' ':' Type
                         RETURN expressions ';'
                     '}'
                     |FUNCTION MAIN '(' parameter ')'
+                    {
+                            output<<"#include<stdio.h>"<<endl<<endl;
+                            output<<"int main()"<<endl;
+                            output<<"{"<<endl;
+                    }
                     '{'
                         statments
                     '}'
@@ -293,22 +300,36 @@ simple:     print
 
 print:      PRINT '(' expressions ')' ';' 
             {
+                output<<"\tprintf(\"";
                 if($3->S_flag != flag::ARRAY_FLAG)
                 {
                     if($3->S_type == INT_TYPE)
+                    {
                         cout<<$3->S_data.int_data;
+                        output<< $3->S_data.int_data ;
+                    }
                     if($3->S_type == REAL_TYPE)
-                        cout<<$3->S_data.real_data;
+                    {
+                        cout<<$3->S_data.int_data;
+                        output<< $3->S_data.real_data ;
+                    }
                 }
                 else if($3->S_flag == flag::ARRAY_FLAG)
                 {
                     if($3->S_type == INT_TYPE)
                         for(auto a:$3->S_data.array_data)
+                        {
                             cout<<a.int_data<<",";
+                            output<<a.int_data;
+                        }
                     if($3->S_type == REAL_TYPE)
                         for(auto a:$3->S_data.array_data)
+                        {
                             cout<<a.real_data<<",";
+                            cout<<a.real_data<<",";
+                        }
                 }
+                output<<"\");"<<endl;
             }
             |PRINTLN '(' expressions ')' ';'
             {
@@ -660,9 +681,15 @@ int main(int argc,char **argv)
         exit(1);
     }
     yyin = fopen(argv[1], "r");         /* open input file */
+    
+    string outputFile="output.c";
+    output.open(outputFile);
+
 
     /* perform parsing */
     if (yyparse() == 1)                 /* parsing */
         yyerror((char *)"Parsing error !");     /* syntax error */
     symStack.dump();
+    output.close();
+    system("gcc output.c -o output");
 }

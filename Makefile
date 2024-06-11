@@ -1,5 +1,6 @@
 all: compiler clean
 
+
 compiler: lex.yy.cpp symbol.hpp symbolTable.hpp y.tab.cpp symbolStack.hpp
 	g++ y.tab.cpp  -ll  -std=c++17 -Wno-deprecated-register
 
