@@ -165,11 +165,26 @@ array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
                 s.S_flag=ARRAY_FLAG;
                 s.S_data.dymention=$5->S_data.dymention;
 
-                if(stringToType($4) != $8->S_type)
+                if(typeMismatch(&s,$8))
                 {
                     cout<<"WARRNING: type mismatch"<<endl;
-                    // yyerror("type mismatch");
-                    // YYABORT;
+                    if(s.S_type==INT_TYPE)
+                    {
+                        for(int i=0;i<$8->S_data.array_data.size();i++)
+                        {
+                            $8->S_data.array_data[i].int_data=$8->S_data.array_data[i].real_data;
+                        }
+                    }
+
+                    if(s.S_type==REAL_TYPE)
+                    {
+                        for(int i=0;i<$8->S_data.array_data.size();i++)
+                        {
+                            $8->S_data.array_data[i].real_data=$8->S_data.array_data[i].int_data;
+                            // cout<<$8->S_data.array_data[i].int_data<<endl;
+                        }
+                    }
+
                 }
 
                 // offset the array
@@ -189,6 +204,7 @@ array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
                 }
                 else
                     s.S_data.array_data=$8->S_data.array_data;
+
                 
                 //calculate total dymentions;
                 int totalDymention=0;
@@ -369,7 +385,8 @@ print:      PRINT '(' expressions ')' ';'
             }
             |PRINT '(' STR ')' ';'
             {
-                cout<<$3;
+                // cout<<$3;
+                output<<"printf(\""
             }
             |PRINTLN '(' STR ')' ';'
             {

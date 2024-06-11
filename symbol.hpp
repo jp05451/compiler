@@ -120,7 +120,7 @@ bool isArray(symbol *s)
 
 bool typeMismatch(symbol *a, symbol *b)
 {
-    return a->S_type == b->S_type;
+    return a->S_type != b->S_type;
 }
 
 symbol *intConst(int value_)
