@@ -1,7 +1,7 @@
 all: compiler clean
 
 compiler: lex.yy.cpp symbol.hpp symboltable.hpp y.tab.cpp
-	g++ y.tab.cpp symbol.hpp symboltable.hpp -ll -ly -std=c++11 -Wno-deprecated-register
+	g++ y.tab.cpp symbol.hpp symboltable.hpp -ll -std=c++11 -Wno-deprecated-register
 
 lex.yy.cpp: scanner.l
 	lex -o lex.yy.cpp scanner.l
