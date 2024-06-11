@@ -1,34 +1,28 @@
 %{
-#include<string.h>
 #include "lex.yy.cpp"
-#include "symbolTable.hpp"
 #include "symbolStack.hpp"
-#include "ast.hpp"
-#include <fstream>
-#include <iostream>
-#include <string>
+#include "symbol.hpp"
 
 #define Trace(t)        printf(t)
-// int yylex();
-// void yyerror(std::string msg);
 void yyerror(char *msg);
+symbolStack symStack;
 %}
 
 %union { 
-    struct ast *a;
+    class symbol *sym;
     double real_value;
-    char* stringValue;
-    char dataIdentity[256];
+    char dType[10];
+    char identity[256];
 }
 
 %token <real_value> INT_VALUE REAL_VALUE TRUE FALSE
 
-%token <dataIdentity> ID 
+%token <identity> ID 
 
-%type <a> expressions factor term
+%type <sym> expressions factor term
 /* %type <real_value> bool_expression */
-%type <real_value> const_exp
-/* %type <dType> Types Type array function_invocation functionVarA functionVarB */
+%type <sym> const_exp
+%type <dType> type
 
 /* tokens */
 %token VAR VAL // define
@@ -62,7 +56,20 @@ declaration:    variable
                 ;
 
 variable:       VAR ID ':' type ';'
-                |VAR ID ':' type '=' expressions ';'
+                {
+                    symbol s($2);
+                    s.S_type=stringToType($4);
+                    symStack.insert($2,s);
+                }
+                |VAR ID ':' type '=' const_exp ';'
+                {
+                    symbol s($2);
+                    s.S_type=stringToType($4);
+                    if(s.S_type != $3)
+                    symStack.insert($2,s);
+
+
+                }
                 |array
                 ;
 
@@ -124,10 +131,10 @@ block:      '{'
             '}'
 
 
-type:       INT
-            |REAL
-            |CHAR
-            |BOOL
+type:       INT {strcpy($$,"INT");}
+            |REAL {strcpy($$,"REAL");}
+            |CHAR {strcpy($$,"CHAR");}
+            |BOOL {strcpy($$,"BOOL");}
             ;
 
 conditional:    IF '(' bool_expression ')'
@@ -167,12 +174,32 @@ inputParameter: expressions
 
 const_exp:      INT_VALUE
                 {
-                    ast *a = new ast;
-                    // $$ = a->newNum(($1));
+                    symbol *s=new symbol;
+                    s->S_type=INT_TYPE;
+                    s->S_data.int_data=(int)$1;
+                    $$=s
                 }
                 |REAL_VALUE
+                {
+                    symbol *s=new symbol;
+                    s->S_type=REAL_TYPE;
+                    s->S_data.int_data=(double)$1;
+                    $$=s
+                }
                 |TRUE
+                {
+                    symbol *s=new symbol;
+                    s->S_type=BOOL_TYPE;
+                    s->S_data.bool_data=true;
+                    $$=s
+                }
                 |FALSE
+                {
+                    symbol *s=new symbol;
+                    s->S_type=BOOL_TYPE;
+                    s->S_data.bool_data=false;
+                    $$=s
+                }
                 ;
 
 bool_expression:    expressions '>' expressions
@@ -203,4 +230,5 @@ int main(int argc,char **argv)
     /* perform parsing */
     if (yyparse() == 1)                 /* parsing */
         yyerror((char *)"Parsing error !");     /* syntax error */
+    symStack.dump();
 }

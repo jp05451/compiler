@@ -127,20 +127,21 @@ println   {token(PRINTLN);}
 {INT_VALUE}   {
                 int number;
                 sscanf(yytext,"%d",&number);
+                yylval.real_value=number;
                 tokenINT_VALUE(INT_VALUE,number);
-                // yylval.int_value=number;
             }
 
 {REAL_VALUE}      {
                 double number;
                 sscanf(yytext,"%lf",&number);
-                // yylval.real_value=number;
+                yylval.real_value=number;
                 tokenREAL(REAL_VALUE,number);
 
             }
 
 {ID}        {
                 printf("id:%s\n",yytext);
+                strcpy(yylval.identity,yytext);
                 token(ID);
             }
 
