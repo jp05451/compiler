@@ -93,11 +93,11 @@ variable:       VAR ID ':' Type ';'
                     if($6->S_type != s.S_type)
                     {
                         cout<<"WARRNING: type mismatch"<<endl;
-                        if($6->S_type=REAL_TYPE)
-                            s.S_data.int_data = (int)$6->S_data.real_data;
+                        if(s.S_type=REAL_TYPE)
+                            s.S_data.real_data = (int)$6->S_data.int_data;
 
-                        if($6->S_type=INT_TYPE)
-                            s.S_data.real_data = (float)$6->S_data.int_data;
+                        if(s.S_type=INT_TYPE)
+                            s.S_data.int_data = (float)$6->S_data.real_data;
                     }
                     symStack.insert($2,s);
 
@@ -635,15 +635,30 @@ factor:         term    {$$ = $1;}
                 {
                     /* type check */
                     if($1->S_type != $3->S_type)
-                            cout << "WARNING:type mismatch" << endl;
+                    {
+                        // yyerror("ERROR: type mismatch");
+                        // YYABORT;
+                        cout << "WARNING:type mismatch" << endl;
+                    }
 
-                    
-                    if($1->S_type == dataType::INT_TYPE)
-                            $$ = intConst($1->S_data.int_data / $3->S_data.int_data);
-                    else if($1->S_type == dataType::REAL_TYPE)
-                            $$ = realConst($1->S_data.real_data / $3->S_data.real_data);
-                    else
-                            yyerror("operator error");
+                    // not array
+                    if(!isArray($1) && !isArray($3))
+                    {
+                        // int int 
+                        if($1->S_type == dataType::INT_TYPE && $3->S_type == dataType::INT_TYPE)
+                                $$ = intConst($1->S_data.int_data / $3->S_data.int_data);
+                        // real int
+                        else if($1->S_type == dataType::REAL_TYPE && $3->S_type == dataType::INT_TYPE)
+                                $$ = realConst($1->S_data.real_data / $3->S_data.int_data);
+                        //int real
+                        else if($1->S_type == dataType::INT_TYPE && $3->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.int_data / $3->S_data.real_data);
+                        // real real
+                        else if($1->S_type == dataType::REAL_TYPE && $3->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.real_data / $3->S_data.real_data);
+                        else
+                                yyerror("operator error");
+                    }
                 
                 }
                 ;
