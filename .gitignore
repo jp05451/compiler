@@ -8,3 +8,4 @@ example.old
 *.output
 *.tab.*
 *.yy.*
+a.out
