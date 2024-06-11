@@ -4,7 +4,10 @@
 #include "symbolStack.hpp"
 
 #define Trace(t)        printf(t)
-void yyerror(char *msg);
+void yyerror(string msg)
+{
+    cerr << "yyerror: line " << linenum << ": " << msg << endl;
+}
 symbolStack symStack;
 
 %}
@@ -49,7 +52,7 @@ symbolStack symStack;
 %%
 program:        declarations;
 
-declarations:   declaration declarations
+declarations:   declaration {symStack.push();} declarations
                 |
                 ;
 
@@ -60,12 +63,22 @@ declaration:    variable
 
 variable:       VAR ID ':' Type ';'
                 {
+                    if(symStack.lookup($2)!=NULL)
+                    {
+                        yyerror("ERROR: duplicate declaration");
+                        YYABORT;
+                    }
                     symbol s($2);
                     s.S_type=stringToType($4);
                     symStack.insert($2,s);
                 }
-                |VAR ID ':' Type '=' const_exp ';'
+                |VAR ID ':' Type '=' expressions ';'
                 {
+                    if(symStack.lookup($2)!=NULL)
+                    {
+                        yyerror("ERROR: duplicate declaration");
+                        YYABORT;
+                    }
                     symbol s($2);
                     s.S_type = stringToType($4);
                     s.S_data = $6->S_data;
@@ -76,6 +89,11 @@ variable:       VAR ID ':' Type ';'
 
 constant:       VAL ID ':' Type '=' expressions ';'
                 {
+                    if(symStack.lookup($2)!=NULL)
+                    {
+                        yyerror("ERROR: duplicate declaration");
+                        YYABORT;
+                    }
                     symbol s($2);
                     s.S_type=stringToType($4);
                     s.S_data.real_data=$6->S_data.real_data;
@@ -83,23 +101,58 @@ constant:       VAL ID ':' Type '=' expressions ';'
                     symStack.insert($2,s);
                     delete $6;
                 }
-                |VAL ID ':' Type dymention '=' array ';'
+                |VAL ID ':' Type dymention '=' '{' arrayValue '}' ';'
+                {
+                    if(symStack.lookup($2)!=NULL)
+                    {
+                        yyerror("ERROR: duplicate declaration");
+                        YYABORT;
+                    }
+                    symbol s($2);
+                    s.S_type=stringToType($4);
+                    s.S_flag=ARRAY_FLAG;
+                    s.S_data.dymention=$5->S_data.dymention;
+                    s.S_data.array_data=$8->S_data.array_data;
+                    int totalDymention=0;
+                    for (auto& n : s.S_data.dymention)
+                        totalDymention += n; //calculate total dymentions;
+                    
+                    if(totalDymention < s.S_data.array_data.size())
+                    {
+                        yyerror("ERROR: too many dimensions");
+                        YYABORT;
+                    }
+                    else
+                    {
+                        s.S_data.array_data.resize(s.S_data.dymention[0]);
+                    }
+                    symStack.insert($2,s);
+                    delete $5;
+                    delete $8;
+                }
                 ;
 
 array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
             {
+                if(symStack.lookup($2)!=NULL)
+                {
+                    yyerror("ERROR: duplicate declaration");
+                    YYABORT;
+                }
                 symbol s($2);
                 s.S_type=stringToType($4);
                 s.S_flag=ARRAY_FLAG;
                 s.S_data.dymention=$5->S_data.dymention;
                 s.S_data.array_data=$8->S_data.array_data;
+                
+                 //calculate total dymentions;
                 int totalDymention=0;
                 for (auto& n : s.S_data.dymention)
-                    totalDymention += n; //calculate total dymentions;
+                    totalDymention += n;
                 
                 if(totalDymention < s.S_data.array_data.size())
                 {
-                    yyerror("ERROR: too many dimensions\n");
+                    yyerror("ERROR: too many dimensions");
                     YYABORT;
                 }
                 else
@@ -112,6 +165,11 @@ array:      VAR ID ':' Type dymention '=' '{' arrayValue '}' ';'
             }
             |VAR ID ':' Type dymention ';'
             {
+                if(symStack.lookup($2)!=NULL)
+                {
+                    yyerror("ERROR: duplicate declaration");
+                    YYABORT;
+                }
                 symbol s($2);
                 s.S_type=stringToType($4);
                 s.S_flag=ARRAY_FLAG;
@@ -127,10 +185,12 @@ dymention:  '[' INT_VALUE ']'
                 s->S_data.dymention.push_back((int)$2);
                 $$ = s;
             }
-            |dymention '[' INT_VALUE ']'
+            |'[' INT_VALUE ']' '[' INT_VALUE ']'
             {
-                $1->S_data.dymention.push_back($3);
-                $$ = $1;
+                symbol *s = new symbol;
+                s->S_data.dymention.push_back($2);
+                s->S_data.dymention.push_back($5);
+                $$ = s;
             }
             ;
 
@@ -178,7 +238,18 @@ statment:   simple
 
 simple:     print
             |ID '=' expressions ';' 
-            
+            {
+                symbol *s=symStack.global_lookup($1);
+                if(s==NULL)
+                {
+                    yyerror("ID not defined");
+                    YYABORT;
+                }
+                else
+                {
+                    s->S_data = $3->S_data;
+                }
+            }
             ;
 
 print:      PRINT '(' expressions ')' ';' 
@@ -194,8 +265,15 @@ print:      PRINT '(' expressions ')' ';'
             ;
 
 block:      '{'
-                statments    
+            {
+                symStack.push();
+            }
+                statments
             '}'
+            {
+                symStack.dump();
+                symStack.pop();
+            }
 
 
 Type:       INT 
@@ -256,13 +334,22 @@ factor:         term
                     if($1->S_type != $3->S_type)
                             cout << "WARNING:type mismatch" << endl;
 
-                    
-                    if($1->S_type == dataType::INT_TYPE)
-                            $$ = intConst($1->S_data.int_data * $3->S_data.int_data);
-                    else if($1->S_type == dataType::REAL_TYPE)
-                            $$ = realConst($1->S_data.real_data * $3->S_data.real_data);
-                    else if($1->S_flag == flag::ARRAY_FLAG)
+                    // array check
+                    if($1->S_flag != flag::ARRAY_FLAG)
                     {
+                        if($1->S_type == dataType::INT_TYPE)
+                                $$ = intConst($1->S_data.int_data * $3->S_data.int_data);
+                        else if($1->S_type == dataType::REAL_TYPE)
+                                $$ = realConst($1->S_data.real_data * $3->S_data.real_data);
+                        else
+                        {
+                            yyerror("operator error");
+                            YYABORT;
+                        }
+                    }
+                    else 
+                    {
+                        // dymention check
                         if($1->S_data.array_data.size() != $3->S_data.array_data.size())
                         {
                             yyerror("dymention mismatch");
@@ -290,11 +377,6 @@ factor:         term
                             }
                         }
                     }
-                    else
-                    {
-                            yyerror("operator error");
-                            YYABORT;
-                    }
                 }
                 |factor '/' term 
                 {
@@ -314,9 +396,23 @@ factor:         term
                 ;
 
 term:           '(' expressions ')' {$$ = $2;}
-                |ID { $$ = symStack.lookup($1); }
+                |ID { $$ = symStack.global_lookup($1); }
                 |ID '[' INT_VALUE ']'
-                |functionCall
+                {
+                    symbol *s = symStack.global_lookup($1);
+                    if( s == NULL)
+                    {
+                        yyerror("ID not defined");
+                        YYABORT;
+                    }
+                    if( s->S_flag != flag::ARRAY_FLAG)
+                    {
+                        yyerror("operator error");
+                        YYABORT;
+                    }
+                    symbol term;
+                    term.S_data = s->S_data.array_data[(int)$3];
+                }
                 |'-' expressions %prec NEGATIVE
                 {
                     if($2->S_type == dataType::INT_TYPE)
@@ -327,13 +423,14 @@ term:           '(' expressions ')' {$$ = $2;}
                             yyerror("operator error");
                 }
                 |const_exp {$$ = $1;}
+                /* |functionCall */
                 ;
 
 
-functionCall:   ID '(' inputParameter ')';
+functionCall:   ID '(' arguments ')';
 
-inputParameter: expressions
-                |inputParameter ',' expressions
+arguments:      expressions
+                |arguments ',' expressions
                 ;
 
 const_exp:      INT_VALUE { $$=intConst($1); }
@@ -352,10 +449,10 @@ bool_expression:    expressions '>' expressions
                     ;
 %%
 
-void yyerror(char *msg)
+/* void yyerror(char *msg)
 {
     fprintf(stderr, "%s\n", msg);
-}
+} */
 
 
 int main(int argc,char **argv)
