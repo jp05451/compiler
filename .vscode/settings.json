@@ -5,6 +5,7 @@
     "deque": "cpp",
     "set": "cpp",
     "string": "cpp",
-    "vector": "cpp"
+    "vector": "cpp",
+    "iosfwd": "cpp"
   }
 }

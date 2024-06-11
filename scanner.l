@@ -135,6 +135,7 @@ println   {token(PRINTLN);}
                 double number;
                 sscanf(yytext,"%lf",&number);
                 yylval.real_value=number;
+                // printf("%d\n",yylval.real_value);
                 tokenREAL(REAL_VALUE,number);
 
             }
@@ -167,14 +168,14 @@ println   {token(PRINTLN);}
 <STRING>\"      {
                     strcat(buf,strTemp);
                     BEGIN(INITIAL);
-                    // strcpy(yylval.stringValue,strTemp);
+                    strcpy(yylval.string,strTemp);
                     tokenString(STR,strTemp);
                 }
 
 <STRING>\'      {
                     strcat(buf,strTemp);
                     BEGIN(INITIAL);
-                    // strcat(yylval.stringValue,strTemp);
+                    strcpy(yylval.string,strTemp);
                     tokenString(STR,strTemp);
                 }
     /*==========Escape sequences==========*/
