@@ -3,7 +3,11 @@ to compile the scanner:
 $ make
 ```
 
+
 to run the code:
 ```
-./scanner INPUTFILE
+./a.out INPUTFILE
+./output
 ```
+
+finished features: example 1,2,3,4,5,6,7,8,11,12,13
